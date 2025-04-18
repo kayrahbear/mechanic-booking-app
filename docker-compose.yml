@@ -1,0 +1,9 @@
+services:
+  backend:
+    build: ./backend
+    ports: [ "8080:8080" ]
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/adc.json
+      GOOGLE_CLOUD_PROJECT: auto-mech-booking-0418
+    volumes:
+      - ~/.config/gcloud/application_default_credentials.json:/secrets/adc.json:ro
