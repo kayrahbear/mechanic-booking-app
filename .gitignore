@@ -1,2 +1,7 @@
-node_modules
-infra/.terraform
+# ── Terraform ─────────────────────────────
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+# Keep the dependency lock file—pinning provider versions is good practice
+!.terraform.lock.hcl
