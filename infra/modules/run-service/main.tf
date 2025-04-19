@@ -34,11 +34,11 @@ resource "google_cloud_run_service" "this" {
         }
       }
     }
-  }
 
-  metadata {
-    annotations = {
-      "autoscaling.knative.dev/maxScale" = "10"
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale" = "10"
+      }
     }
   }
 }

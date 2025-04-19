@@ -60,6 +60,14 @@ steps:
         -backend-config="bucket=tfstate-${PROJECT_ID}" \
         -backend-config="prefix=live"
 
+      # Import existing resources
+      terraform import google_firestore_database.default "projects/${PROJECT_ID}/databases/(default)"
+      terraform import module.queue.google_cloud_tasks_queue.notifications "projects/${PROJECT_ID}/locations/${_REGION}/queues/notification-tasks"
+      terraform import module.secrets.google_secret_manager_secret.this["SENDGRID_KEY"] "projects/${PROJECT_ID}/secrets/SENDGRID_KEY"
+      terraform import module.secrets.google_secret_manager_secret.this["TWILIO_SID"] "projects/${PROJECT_ID}/secrets/TWILIO_SID"
+      terraform import module.secrets.google_secret_manager_secret.this["STRIPE_SK"] "projects/${PROJECT_ID}/secrets/STRIPE_SK"
+
+      # Apply changes
       terraform apply -auto-approve -input=false \
         -var="project_id=${PROJECT_ID}" \
         -var="region=${_REGION}" \
