@@ -5,21 +5,6 @@ locals {
   frontend_image = "${local.region}-docker.pkg.dev/${local.project_id}/frontend-repo/frontend:${var.image_tag}"
 }
 
-# Artifact Registry Repositories --------------------------------------------
-resource "google_artifact_registry_repository" "backend" {
-  provider = google
-  location = local.region
-  repository_id = "backend-repo"
-  format = "DOCKER"
-}
-
-resource "google_artifact_registry_repository" "frontend" {
-  provider = google
-  location = local.region
-  repository_id = "frontend-repo"
-  format = "DOCKER"
-}
-
 # Backend API ---------------------------------------------------------------
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend-api"
