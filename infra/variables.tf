@@ -15,6 +15,8 @@ variable "image_tag" {
   default     = "latest"
 }
 
-variable "cloud_build_sa" { 
-  type = string 
+variable "cloud_build_sa" {
+  description = "Cloud Build service account email"
+  type        = string
+  default     = "" # Will be overridden by Cloud Build
 }

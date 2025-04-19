@@ -7,7 +7,7 @@ options:
 
 steps:
 ###############################################################################
-# 1  Build & push backend container
+# 1  Build & push backend container
 ###############################################################################
 - id: backend-build
   name: gcr.io/cloud-builders/docker
@@ -26,7 +26,7 @@ steps:
   ]
 
 ###############################################################################
-# 2  Build & push frontend container
+# 2  Build & push frontend container
 ###############################################################################
 - id: frontend-build
   name: gcr.io/cloud-builders/docker
@@ -45,7 +45,7 @@ steps:
   ]
 
 ###############################################################################
-# 3  Terraform apply (infra changes)
+# 3  Terraform apply (infra changes)
 ###############################################################################
 - id: terraform-apply
   name: hashicorp/terraform:light          # alpine image with terraform only
@@ -63,7 +63,8 @@ steps:
       terraform apply -auto-approve -input=false \
         -var="project_id=${PROJECT_ID}" \
         -var="region=${_REGION}" \
-        -var="image_tag=${SHORT_SHA}"
+        -var="image_tag=${SHORT_SHA}" \
+        -var="cloud_build_sa=${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
 
 ###############################################################################
 # (optional) Slack / webhook notifier
@@ -77,4 +78,4 @@ images:
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
 
-timeout: 1800s   # 30 minutes
+timeout: 1800s   # 30 minutes
