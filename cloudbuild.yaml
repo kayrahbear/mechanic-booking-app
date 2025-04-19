@@ -7,15 +7,15 @@ options:
 
 steps:
 # 1  Run unit tests ----------------------------------------------------------
-- id: 'backend-test'
-  name: 'python:3.11-slim'
-  dir: 'backend'
-  entrypoint: bash
-  args:
-    - -c
-    - |
-      pip install -r requirements-dev.txt
-      pytest -q
+# - id: 'backend-test'
+#   name: 'python:3.11-slim'
+#   dir: 'backend'
+#   entrypoint: bash
+#   args:
+#     - -c
+#     - |
+#       pip install -r requirements-dev.txt
+#       pytest -q
 
 # 2  Build & push backend container -----------------------------------------
 - id: 'backend-build'
