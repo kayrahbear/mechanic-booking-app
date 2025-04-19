@@ -8,6 +8,6 @@ resource "google_cloud_tasks_queue" "notifications" {
   location = var.region
 
   app_engine_routing_override {
-    service  = "backend-api"      # will target backend endpoints
+    service = "backend-api" # will target backend endpoints
   }
 }
