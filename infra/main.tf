@@ -8,17 +8,17 @@ resource "google_firestore_database" "default" {
 }
 
 module "service_accounts" {
-  source          = "./modules/service-accounts"
-  cloud_build_sa  = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
+  source         = "./modules/service-accounts"
+  cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
 }
 
 # Back‑end Cloud Run service
 module "backend_service" {
   source = "./modules/run-service"
 
-  name  = "backend-api"
-  image = "${var.region}-docker.pkg.dev/${var.project_id}/backend-repo/backend:${var.image_tag}"
-  region = var.region
+  name                  = "backend-api"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/backend-repo/backend:${var.image_tag}"
+  region                = var.region
   service_account_email = module.service_accounts.backend_email
 
   env = {
@@ -30,9 +30,9 @@ module "backend_service" {
 module "frontend_service" {
   source = "./modules/run-service"
 
-  name  = "frontend-ssr"
-  image = "${var.region}-docker.pkg.dev/${var.project_id}/frontend-repo/frontend:${var.image_tag}"
-  region = var.region
+  name                  = "frontend-ssr"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/frontend-repo/frontend:${var.image_tag}"
+  region                = var.region
   service_account_email = module.service_accounts.frontend_email
 
   env = {
@@ -41,9 +41,9 @@ module "frontend_service" {
 }
 
 module "queue" {
-  source      = "./modules/cloud-tasks"
-  project_id  = var.project_id
-  region      = var.region
+  source     = "./modules/cloud-tasks"
+  project_id = var.project_id
+  region     = var.region
 }
 
 module "secrets" {

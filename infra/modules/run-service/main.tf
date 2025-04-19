@@ -1,8 +1,19 @@
-variable "name"         { type = string }
-variable "image"        { type = string }
-variable "region"       { type = string }
-variable "service_account_email" { type = string }
-variable "env"          { type = map(string) default = {} }
+variable "name"{ 
+  type = string 
+}
+variable "image"{ 
+  type = string 
+}
+variable "region"{ 
+  type = string 
+}
+variable "service_account_email"{ 
+  type = string 
+}
+variable "env"{ 
+  type = map(string) 
+  default = {} 
+}
 
 resource "google_cloud_run_service" "this" {
   name     = var.name

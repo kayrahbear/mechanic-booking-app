@@ -56,53 +56,20 @@ steps:
     ]
 
 # 4  Terraform apply (infra changes) ----------------------------------------
-- id: 'terraform-apply'
-  name: 'hashicorp/terraform:light'
-  dir: 'infra'
-  entrypoint: sh
+- id: terraform-apply
+  name: hashicorp/terraform:light
+  dir: infra
   env:
-    - 'GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com'
+    - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com
   args:
     - -c
     - |
       terraform init -backend-config="bucket=tfstate-${PROJECT_ID}" -backend-config="prefix=live"
-      # Import existing repositories
-      terraform import google_artifact_registry_repository.backend "projects/${PROJECT_ID}/locations/${_REGION}/repositories/backend-repo"
-      terraform import google_artifact_registry_repository.frontend "projects/${PROJECT_ID}/locations/${_REGION}/repositories/frontend-repo"
-      # Apply changes
-      terraform apply -auto-approve -input=false -var="project_id=$PROJECT_ID" -var="image_tag=$SHORT_SHA"
-
-# 5  Deploy revised images to Cloud Run -------------------------------------
-- id: 'deploy-backend'
-  name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: 'gcloud'
-  args:
-    - 'run'
-    - 'deploy'
-    - 'backend-api'
-    - '--image'
-    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
-    - '--region'
-    - '${_REGION}'
-    - '--platform'
-    - 'managed'
-    - '--quiet'
-
-- id: 'deploy-frontend'
-  name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: 'gcloud'
-  args:
-    - 'run'
-    - 'deploy'
-    - 'frontend-ssr'
-    - '--image'
-    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
-    - '--region'
-    - '${_REGION}'
-    - '--platform'
-    - 'managed'
-    - '--quiet'
-
+      terraform apply -auto-approve -input=false \
+        -var="project_id=${PROJECT_ID}" \
+        -var="region=${_REGION}" \
+        -var="image_tag=${SHORT_SHA}"
+        
 # 6  Notify on success (optional Slack/Webhook) -----------------------------
 # - id: 'notify'
 #   name: 'curlimages/curl'
