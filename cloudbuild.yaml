@@ -70,7 +70,7 @@ steps:
       terraform import google_artifact_registry_repository.backend "projects/${PROJECT_ID}/locations/${_REGION}/repositories/backend-repo"
       terraform import google_artifact_registry_repository.frontend "projects/${PROJECT_ID}/locations/${_REGION}/repositories/frontend-repo"
       # Apply changes
-      terraform apply -auto-approve -input=false -var="project_id=$PROJECT_ID"
+      terraform apply -auto-approve -input=false -var="project_id=$PROJECT_ID" -var="image_tag=$SHORT_SHA"
 
 # 5  Deploy revised images to Cloud Run -------------------------------------
 - id: 'deploy-backend'

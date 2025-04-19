@@ -8,3 +8,9 @@ variable "region" {
   type        = string
   default     = "us-central1"
 }
+
+variable "image_tag" {
+  description = "Tag for the container images"
+  type        = string
+  default     = "latest"
+}

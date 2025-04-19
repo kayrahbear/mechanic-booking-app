@@ -1,8 +1,23 @@
 locals {
   region         = var.region
   project_id     = var.project_id
-  backend_image  = "${local.region}-docker.pkg.dev/${local.project_id}/backend-repo/backend:latest"
-  frontend_image = "${local.region}-docker.pkg.dev/${local.project_id}/frontend-repo/frontend:latest"
+  backend_image  = "${local.region}-docker.pkg.dev/${local.project_id}/backend-repo/backend:${var.image_tag}"
+  frontend_image = "${local.region}-docker.pkg.dev/${local.project_id}/frontend-repo/frontend:${var.image_tag}"
+}
+
+# Artifact Registry Repositories --------------------------------------------
+resource "google_artifact_registry_repository" "backend" {
+  provider = google
+  location = local.region
+  repository_id = "backend-repo"
+  format = "DOCKER"
+}
+
+resource "google_artifact_registry_repository" "frontend" {
+  provider = google
+  location = local.region
+  repository_id = "frontend-repo"
+  format = "DOCKER"
 }
 
 # Backend API ---------------------------------------------------------------
