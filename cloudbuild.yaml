@@ -1,83 +1,80 @@
-# Cloud Build pipeline (v1 format)
+# Cloud Build pipeline  (v1 format)
 substitutions:
-  _REGION: us-central1
+  _REGION: us-central1    # change if you move regions
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-# 1  Run unit tests ----------------------------------------------------------
-# - id: 'backend-test'
-#   name: 'python:3.11-slim'
-#   dir: 'backend'
-#   entrypoint: bash
-#   args:
-#     - -c
-#     - |
-#       pip install -r requirements-dev.txt
-#       pytest -q
+###############################################################################
+# 1  Build & push backend container
+###############################################################################
+- id: backend-build
+  name: gcr.io/cloud-builders/docker
+  dir: backend
+  args: [
+    'build','-t',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA',
+    '.'
+  ]
 
-# 2  Build & push backend container -----------------------------------------
-- id: 'backend-build'
-  name: 'gcr.io/cloud-builders/docker'
-  dir: 'backend'
-  args:
-    [
-      'build','-t',
-      '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA',
-      '.'
-    ]
+- id: backend-push
+  name: gcr.io/cloud-builders/docker
+  args: [
+    'push',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
+  ]
 
-- id: 'backend-push'
-  name: 'gcr.io/cloud-builders/docker'
-  args:
-    [
-      'push',
-      '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
-    ]
+###############################################################################
+# 2  Build & push frontend container
+###############################################################################
+- id: frontend-build
+  name: gcr.io/cloud-builders/docker
+  dir: frontend
+  args: [
+    'build','-t',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA',
+    '.'
+  ]
 
-# 3  Build & push frontend container ----------------------------------------
-- id: 'frontend-build'
-  name: 'gcr.io/cloud-builders/docker'
-  dir: 'frontend'
-  args:
-    [
-      'build','-t',
-      '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA',
-      '.'
-    ]
+- id: frontend-push
+  name: gcr.io/cloud-builders/docker
+  args: [
+    'push',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
+  ]
 
-- id: 'frontend-push'
-  name: 'gcr.io/cloud-builders/docker'
-  args:
-    [
-      'push',
-      '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
-    ]
-
-# 4  Terraform apply (infra changes) ----------------------------------------
+###############################################################################
+# 3  Terraform apply (infra changes)
+###############################################################################
 - id: terraform-apply
-  name: hashicorp/terraform:light
+  name: hashicorp/terraform:light          # alpine image with terraform only
   dir: infra
+  entrypoint: /bin/sh                      # <— key fix: run shell, not terraform
   env:
     - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com
   args:
     - -c
     - |
-      terraform init -backend-config="bucket=tfstate-${PROJECT_ID}" -backend-config="prefix=live"
+      terraform init \
+        -backend-config="bucket=tfstate-${PROJECT_ID}" \
+        -backend-config="prefix=live"
+
       terraform apply -auto-approve -input=false \
         -var="project_id=${PROJECT_ID}" \
         -var="region=${_REGION}" \
         -var="image_tag=${SHORT_SHA}"
-        
-# 6  Notify on success (optional Slack/Webhook) -----------------------------
-# - id: 'notify'
-#   name: 'curlimages/curl'
-#   entrypoint: 'curl'
+
+###############################################################################
+# (optional) Slack / webhook notifier
+###############################################################################
+# - id: notify
+#   name: curlimages/curl
+#   entrypoint: curl
 #   args: ['-X','POST','https://hooks.slack.com/services/…']
 
 images:
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
 
-timeout: 1800s   # 30 minutes
+timeout: 1800s   # 30 minutes
