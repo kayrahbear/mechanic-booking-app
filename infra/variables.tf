@@ -14,3 +14,5 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "cloud_build_sa" { type = string }
