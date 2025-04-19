@@ -6,7 +6,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-# 1  Run unit tests ----------------------------------------------------------
+# 1  Run unit tests ----------------------------------------------------------
 # - id: 'backend-test'
 #   name: 'python:3.11-slim'
 #   dir: 'backend'
@@ -17,7 +17,7 @@ steps:
 #       pip install -r requirements-dev.txt
 #       pytest -q
 
-# 2  Build & push backend container -----------------------------------------
+# 2  Build & push backend container -----------------------------------------
 - id: 'backend-build'
   name: 'gcr.io/cloud-builders/docker'
   dir: 'backend'
@@ -36,7 +36,7 @@ steps:
       '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
     ]
 
-# 3  Build & push frontend container ----------------------------------------
+# 3  Build & push frontend container ----------------------------------------
 - id: 'frontend-build'
   name: 'gcr.io/cloud-builders/docker'
   dir: 'frontend'
@@ -55,7 +55,7 @@ steps:
       '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
     ]
 
-# 4  Terraform apply (infra changes) ----------------------------------------
+# 4  Terraform apply (infra changes) ----------------------------------------
 - id: 'terraform-apply'
   name: 'hashicorp/terraform:light'
   dir: 'infra'
@@ -66,9 +66,13 @@ steps:
     - -c
     - |
       terraform init -backend-config="bucket=tfstate-${PROJECT_ID}" -backend-config="prefix=live"
+      # Import existing repositories
+      terraform import google_artifact_registry_repository.backend "projects/${PROJECT_ID}/locations/${_REGION}/repositories/backend-repo"
+      terraform import google_artifact_registry_repository.frontend "projects/${PROJECT_ID}/locations/${_REGION}/repositories/frontend-repo"
+      # Apply changes
       terraform apply -auto-approve -input=false -var="project_id=$PROJECT_ID"
 
-# 5  Deploy revised images to Cloud Run -------------------------------------
+# 5  Deploy revised images to Cloud Run -------------------------------------
 - id: 'deploy-backend'
   name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   args:
@@ -91,7 +95,7 @@ steps:
       '--quiet'
     ]
 
-# 6  Notify on success (optional Slack/Webhook) -----------------------------
+# 6  Notify on success (optional Slack/Webhook) -----------------------------
 # - id: 'notify'
 #   name: 'curlimages/curl'
 #   entrypoint: 'curl'
@@ -101,4 +105,4 @@ images:
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
 
-timeout: 1800s   # 30 minutes
+timeout: 1800s   # 30 minutes
