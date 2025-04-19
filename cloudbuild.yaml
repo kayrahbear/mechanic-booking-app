@@ -75,25 +75,33 @@ steps:
 # 5  Deploy revised images to Cloud Run -------------------------------------
 - id: 'deploy-backend'
   name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: 'gcloud'
   args:
-    [
-      'run','deploy','backend-api',
-      '--image','${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA',
-      '--region','${_REGION}',
-      '--platform','managed',
-      '--quiet'
-    ]
+    - 'run'
+    - 'deploy'
+    - 'backend-api'
+    - '--image'
+    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
+    - '--region'
+    - '${_REGION}'
+    - '--platform'
+    - 'managed'
+    - '--quiet'
 
 - id: 'deploy-frontend'
   name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: 'gcloud'
   args:
-    [
-      'run','deploy','frontend-ssr',
-      '--image','${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA',
-      '--region','${_REGION}',
-      '--platform','managed',
-      '--quiet'
-    ]
+    - 'run'
+    - 'deploy'
+    - 'frontend-ssr'
+    - '--image'
+    - '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
+    - '--region'
+    - '${_REGION}'
+    - '--platform'
+    - 'managed'
+    - '--quiet'
 
 # 6  Notify on success (optional Slack/Webhook) -----------------------------
 # - id: 'notify'
