@@ -32,3 +32,6 @@ typing-extensions==4.13.2 ; python_version >= "3.11" and python_version < "4.0"
 typing-inspection==0.4.0 ; python_version >= "3.11" and python_version < "4.0"
 urllib3==2.4.0 ; python_version >= "3.11" and python_version < "4.0"
 uvicorn==0.34.1 ; python_version >= "3.11" and python_version < "4.0"
+firebase-admin>=6.0,<7.0
+google-cloud-firestore>=2.7,<3.0
+tenacity>=8.0.0,<9.0  # For retry logic with exponential backoff

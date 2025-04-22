@@ -50,6 +50,8 @@ class BookingOut(BookingCreate):
     id: str = Field(..., description="Firestore document ID")
     slot_end: datetime
     status: BookingStatus = "confirmed"
+    service_name: str = ""  # Added for denormalization
+    service_price: float = 0.0  # Added for denormalization
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
