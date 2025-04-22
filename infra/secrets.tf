@@ -1,3 +1,6 @@
+/* 
+ * These secrets are already defined in the secrets module in main.tf
+ * Commenting out to prevent conflicts
 resource "google_secret_manager_secret" "sendgrid" {
   secret_id = "SENDGRID_KEY"
   replication {
@@ -11,16 +14,19 @@ resource "google_secret_manager_secret" "twilio" {
     auto {}
   }
 }
+*/
 
-# Allow backend runtime SA to access payload  latest version
+# Allow backend runtime SA to access payload latest version
 resource "google_secret_manager_secret_iam_member" "back_read_sendgrid" {
-  secret_id = google_secret_manager_secret.sendgrid.id
+  # Using the module resource reference instead of the direct one
+  secret_id = "projects/${var.project_id}/secrets/SENDGRID_KEY"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
-  secret_id = google_secret_manager_secret.twilio.id
+  # Using the module resource reference instead of the direct one
+  secret_id = "projects/${var.project_id}/secrets/TWILIO_SID"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }

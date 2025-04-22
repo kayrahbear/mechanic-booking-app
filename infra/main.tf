@@ -17,6 +17,10 @@ module "service_accounts" {
   cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
 }
 
+/*
+ * These services are already defined directly in run.tf
+ * Commenting out to prevent conflicts
+
 # Back‑end Cloud Run service
 module "backend_service" {
   source = "./modules/run-service"
@@ -44,6 +48,7 @@ module "frontend_service" {
     NEXT_PUBLIC_API_BASE = module.backend_service.url
   }
 }
+*/
 
 module "secrets" {
   source = "./modules/secrets"
