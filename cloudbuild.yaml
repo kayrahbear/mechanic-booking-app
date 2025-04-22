@@ -110,6 +110,15 @@ steps:
         # terraform import module.backend_service.google_cloud_run_service.this "${_REGION}/backend-api" || true
       fi
 
+      # Remove any secret versions from state first to avoid conflicts
+      if terraform state list | grep -q "module.secrets.google_secret_manager_secret_version"; then
+        echo "Removing secret versions from state to avoid conflicts..."
+        terraform state rm 'module.secrets.google_secret_manager_secret_version.init["SENDGRID_KEY"]' || true
+        terraform state rm 'module.secrets.google_secret_manager_secret_version.init["TWILIO_SID"]' || true
+        terraform state rm 'module.secrets.google_secret_manager_secret_version.init["STRIPE_SK"]' || true
+      fi
+
+      # Use proper quoting for the state list commands
       if terraform state list 'module.secrets.google_secret_manager_secret.this["SENDGRID_KEY"]' &>/dev/null; then
         echo "Module SendGrid secret already imported."
       else

@@ -51,6 +51,7 @@ module "frontend_service" {
 */
 
 module "secrets" {
-  source = "./modules/secrets"
-  names  = ["SENDGRID_KEY", "TWILIO_SID", "STRIPE_SK"]
+  source     = "./modules/secrets"
+  names      = ["SENDGRID_KEY", "TWILIO_SID", "STRIPE_SK"]
+  project_id = var.project_id
 }

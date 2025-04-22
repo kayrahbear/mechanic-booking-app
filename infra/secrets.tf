@@ -18,15 +18,15 @@ resource "google_secret_manager_secret" "twilio" {
 
 # Allow backend runtime SA to access payload latest version
 resource "google_secret_manager_secret_iam_member" "back_read_sendgrid" {
-  # Using the module resource reference instead of the direct one
-  secret_id = "projects/${var.project_id}/secrets/SENDGRID_KEY"
+  # Reference the secret by its full resource ID from the module output
+  secret_id = module.secrets.secret_ids["SENDGRID_KEY"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
-  # Using the module resource reference instead of the direct one
-  secret_id = "projects/${var.project_id}/secrets/TWILIO_SID"
+  # Reference the secret by its full resource ID from the module output
+  secret_id = module.secrets.secret_ids["TWILIO_SID"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
