@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from datetime import datetime, timedelta
 import asyncio
 from google.cloud import firestore
-from backend.app.models import BookingCreate, BookingOut
+from backend.app.models import BookingCreate, BookingOut, SlotStatus
 from backend.app.routers.bookings import create_booking_with_transaction, SlotUnavailableError, ServiceNotFoundError, DayNotPublishedError
 
 pytestmark = pytest.mark.asyncio
@@ -46,7 +46,7 @@ async def test_successful_booking_creation(clean_firestore, sample_data):
     # Verify slot is marked as booked
     availability_doc = db.collection("availability").document(today).get()
     slots = availability_doc.to_dict()["slots"]
-    assert slots[available_slot] == "booked"
+    assert slots[available_slot] == SlotStatus.BOOKED.value
     
     # Verify booking is stored in Firestore
     booking_doc = db.collection("bookings").document(booking.id).get()
@@ -201,7 +201,7 @@ async def test_concurrent_bookings_same_slot(clean_firestore, sample_data):
     # Check that the slot is now booked
     availability_doc = db.collection("availability").document(today).get()
     slots = availability_doc.to_dict()["slots"]
-    assert slots[available_slot] == "booked"
+    assert slots[available_slot] == SlotStatus.BOOKED.value
     
     # Verify only one booking was created
     booking_query = db.collection("bookings").where(

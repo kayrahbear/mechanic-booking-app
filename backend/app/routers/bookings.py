@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from google.cloud import firestore
+from google.api_core import exceptions as google_exceptions
 from firebase_admin import auth
 from firebase_admin.auth import verify_id_token
 from datetime import datetime, timedelta
@@ -8,7 +9,7 @@ import logging
 import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from ..models import BookingCreate, BookingOut, BookingStatus
+from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole
 from ..firestore import get_client
 from ..auth import get_current_user
 
@@ -21,8 +22,8 @@ logger = logging.getLogger(__name__)
 retry_config = {
     'stop': stop_after_attempt(3),
     'wait': wait_exponential(multiplier=1, min=1, max=10),
-    'retry': retry_if_exception_type((firestore.exceptions.ServiceUnavailable, 
-                                      firestore.exceptions.DeadlineExceeded)),
+    'retry': retry_if_exception_type((google_exceptions.ServiceUnavailable, 
+                                      google_exceptions.DeadlineExceeded)),
     'reraise': True,
 }
 
@@ -112,7 +113,7 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     # Create booking with additional fields
     booking_data = payload.model_dump()
     booking_data["slot_end"] = slot_end
-    booking_data["status"] = "confirmed"
+    booking_data["status"] = BookingStatus.CONFIRMED.value
     booking_data["created_at"] = firestore.SERVER_TIMESTAMP
     booking_data["updated_at"] = firestore.SERVER_TIMESTAMP
     
@@ -137,11 +138,11 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
         time_key = payload.slot_start.strftime("%H:%M")
         
         # Check if the slot is free
-        if slots.get(time_key) != "free":
+        if slots.get(time_key) != SlotStatus.FREE.value:
             raise SlotUnavailableError(f"Time slot {time_key} is not available")
 
         # Mark slot as booked
-        slots[time_key] = "booked"
+        slots[time_key] = SlotStatus.BOOKED.value
         transaction.update(slot_doc, {
             "slots": slots,
             "updated_at": firestore.SERVER_TIMESTAMP
@@ -161,14 +162,22 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     
     # Return the fully-populated booking
     booking_id = booking_ref.id
-    return BookingOut(id=booking_id, **booking_data)
+    
+    # Create a response object without the SERVER_TIMESTAMP values
+    response_data = booking_data.copy()
+    # Replace sentinel values with actual datetime values for the response
+    current_time = datetime.now()
+    response_data["created_at"] = current_time
+    response_data["updated_at"] = current_time
+    
+    return BookingOut(id=booking_id, **response_data)
 
 @router.get("", response_model=List[BookingOut])
 async def get_bookings(
     current_user = Depends(get_current_user),
     from_date: Optional[datetime] = Query(None, description="Filter bookings from this date"),
     to_date: Optional[datetime] = Query(None, description="Filter bookings until this date"),
-    status: Optional[BookingStatus] = Query(None, description="Filter by booking status")
+    status: Optional[str] = Query(None, description="Filter by booking status")
 ):
     db = get_client()
     if not db:
@@ -178,7 +187,7 @@ async def get_bookings(
     query = db.collection("bookings")
     
     # Add filters
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN.value:
         # Regular users can only see their own bookings
         query = query.where("customer_email", "==", current_user.email)
     
@@ -218,7 +227,7 @@ async def get_booking(booking_id: str, current_user = Depends(get_current_user))
     booking_data = booking_doc.to_dict()
     
     # Check permissions - only admins or the booking owner can see it
-    if current_user.role != "admin" and booking_data.get("customer_email") != current_user.email:
+    if current_user.role != UserRole.ADMIN.value and booking_data.get("customer_email") != current_user.email:
         raise HTTPException(403, "Not authorized to view this booking")
     
     return BookingOut(id=booking_id, **booking_data)
@@ -226,10 +235,10 @@ async def get_booking(booking_id: str, current_user = Depends(get_current_user))
 @router.patch("/{booking_id}/status", response_model=BookingOut)
 async def update_booking_status(
     booking_id: str, 
-    status: BookingStatus,
+    status: str,
     current_user = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN.value:
         raise HTTPException(403, "Only admins can update booking status")
     
     db = get_client()
@@ -248,25 +257,23 @@ async def update_booking_status(
         # Read the booking document to verify it still exists
         doc = booking_ref.get(transaction=transaction)
         if not doc.exists:
-            raise HTTPException(404, "Booking not found during transaction")
-        
+            return None
+            
         # Update the status
         transaction.update(booking_ref, {
             "status": status,
             "updated_at": firestore.SERVER_TIMESTAMP
         })
         
+        # Return success
         return True
     
     # Execute the transaction
-    try:
-        update_status_txn(db.transaction())
-    except Exception as e:
-        logger.exception(f"Error updating booking status: {str(e)}")
-        raise HTTPException(500, f"Failed to update status: {str(e)}")
+    success = update_status_txn(db.transaction())
     
-    # Get the updated booking
-    updated_doc = booking_ref.get()
-    booking_data = updated_doc.to_dict()
+    if not success:
+        raise HTTPException(404, "Booking not found")
     
-    return BookingOut(id=booking_id, **booking_data)
+    # Fetch and return the updated booking
+    updated_booking = booking_ref.get().to_dict()
+    return BookingOut(id=booking_id, **updated_booking)

@@ -47,7 +47,7 @@ trap cleanup EXIT
 
 # Start Firebase emulators in the background
 echo "Starting Firebase emulators..."
-firebase emulators:start --only firestore,auth &
+firebase emulators:start --only firestore,auth --project test-project &
 
 # Wait for emulators to start
 echo "Waiting for emulators to start..."
@@ -55,12 +55,20 @@ sleep 5
 
 # Run the tests
 echo "Running tests..."
-cd backend
+
+# Check if we're already in the backend directory
+if [[ $(basename $(pwd)) != "backend" ]]; then
+    cd backend
+fi
+
 # Set environment variables for emulators
 export FIRESTORE_EMULATOR_HOST="localhost:8080"
 export FIREBASE_AUTH_EMULATOR_HOST="localhost:9099"
 
-pytest tests/test_booking_transaction.py -v
+# Add the parent directory to the Python path
+export PYTHONPATH=$PYTHONPATH:$(dirname $(pwd))
+
+python3 -m pytest tests/test_booking_transaction.py -v
 
 # Keep emulators running if requested
 if [ "$1" == "--keep" ]; then

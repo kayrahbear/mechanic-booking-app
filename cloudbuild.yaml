@@ -60,7 +60,7 @@ steps:
       terraform init \
         -backend-config="bucket=tfstate-${PROJECT_ID}" \
         -backend-config="prefix=live"
-        
+
       # List current state for debugging
       echo "Current Terraform state:"
       terraform state list || true

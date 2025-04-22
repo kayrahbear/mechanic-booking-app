@@ -5,6 +5,7 @@ from firebase_admin import credentials, auth
 from google.cloud import firestore
 from datetime import datetime, timedelta
 import uuid
+from backend.app.models import SlotStatus, UserRole
 
 # Set environment variables for Firestore emulator
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
@@ -81,7 +82,7 @@ def sample_data(clean_firestore):
     for hour in range(8, 17):
         for minute in [0, 30]:
             time_slot = f"{hour:02d}:{minute:02d}"
-            slots[time_slot] = "free"
+            slots[time_slot] = SlotStatus.FREE.value
     
     availability_ref = db.collection("availability").document(today)
     availability_ref.set({
@@ -95,7 +96,7 @@ def sample_data(clean_firestore):
     # Mark one slot as already booked
     booked_slot = "13:00"
     availability_ref.update({
-        f"slots.{booked_slot}": "booked"
+        f"slots.{booked_slot}": SlotStatus.BOOKED.value
     })
     
     # Create a test user in Firestore
@@ -104,7 +105,7 @@ def sample_data(clean_firestore):
     user_ref.set({
         "email": "test@example.com",
         "name": "Test User",
-        "role": "customer",
+        "role": UserRole.CUSTOMER.value,
         "created_at": firestore.SERVER_TIMESTAMP,
         "updated_at": firestore.SERVER_TIMESTAMP
     })
@@ -128,7 +129,7 @@ def mock_auth_user():
         uid="test-user-id",
         email="test@example.com",
         name="Test User",
-        role="customer",
+        role=UserRole.CUSTOMER.value,
         is_admin=False
     )
 
@@ -141,6 +142,6 @@ def mock_admin_user():
         uid="admin-user-id",
         email="admin@example.com",
         name="Admin User",
-        role="admin",
+        role=UserRole.ADMIN.value,
         is_admin=True
     ) 
