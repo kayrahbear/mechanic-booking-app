@@ -5,3 +5,13 @@
 crash.log
 # Keep the dependency lock file—pinning provider versions is good practice
 !.terraform.lock.hcl
+
+
+# ── Cursor ─────────────────────────────
+cursor.config.toml  
+.cursor/
+
+
+# ── Python ─────────────────────────────
+__pycache__/
+*.pyc

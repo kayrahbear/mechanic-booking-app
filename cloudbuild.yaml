@@ -60,14 +60,51 @@ steps:
         -backend-config="bucket=tfstate-${PROJECT_ID}" \
         -backend-config="prefix=live"
 
-      # Import existing resources
-      terraform import google_firestore_database.default "projects/${PROJECT_ID}/databases/(default)"
-      terraform import module.queue.google_cloud_tasks_queue.notifications "projects/${PROJECT_ID}/locations/${_REGION}/queues/notification-tasks"
-      terraform import module.secrets.google_secret_manager_secret.this["SENDGRID_KEY"] "projects/${PROJECT_ID}/secrets/SENDGRID_KEY"
-      terraform import module.secrets.google_secret_manager_secret.this["TWILIO_SID"] "projects/${PROJECT_ID}/secrets/TWILIO_SID"
-      terraform import module.secrets.google_secret_manager_secret.this["STRIPE_SK"] "projects/${PROJECT_ID}/secrets/STRIPE_SK"
+      # Check if resources already exist and import them
+      if terraform state list google_firestore_database.default &>/dev/null; then
+        echo "Firestore DB already imported."
+      else
+        terraform import google_firestore_database.default "projects/${PROJECT_ID}/databases/(default)" || true
+      fi
 
-      # Apply changes
+      if terraform state list google_cloud_tasks_queue.notifications &>/dev/null; then
+        echo "Cloud Tasks queue already imported."
+      else
+        terraform import google_cloud_tasks_queue.notifications "projects/${PROJECT_ID}/locations/${_REGION}/queues/notification-tasks" || true
+      fi
+
+      if terraform state list google_cloud_run_v2_service.backend &>/dev/null; then
+        echo "Backend service already imported."
+      else
+        terraform import google_cloud_run_v2_service.backend "${_REGION}/backend-api" || true
+      fi
+
+      if terraform state list google_cloud_run_v2_service.frontend &>/dev/null; then
+        echo "Frontend service already imported."
+      else
+        terraform import google_cloud_run_v2_service.frontend "${_REGION}/frontend-ssr" || true
+      fi
+
+      if terraform state list google_secret_manager_secret.sendgrid &>/dev/null; then
+        echo "SendGrid secret already imported."
+      else
+        terraform import google_secret_manager_secret.sendgrid "projects/${PROJECT_ID}/secrets/SENDGRID_KEY" || true
+      fi
+
+      if terraform state list google_secret_manager_secret.twilio &>/dev/null; then
+        echo "Twilio secret already imported."
+      else
+        terraform import google_secret_manager_secret.twilio "projects/${PROJECT_ID}/secrets/TWILIO_SID" || true
+      fi
+
+      # Apply changes with -refresh-only first to sync state, then apply actual changes
+      terraform apply -refresh-only -auto-approve -input=false \
+        -var="project_id=${PROJECT_ID}" \
+        -var="region=${_REGION}" \
+        -var="image_tag=${SHORT_SHA}" \
+        -var="cloud_build_sa=${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+
+      # Now apply the real changes
       terraform apply -auto-approve -input=false \
         -var="project_id=${PROJECT_ID}" \
         -var="region=${_REGION}" \

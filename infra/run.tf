@@ -5,6 +5,8 @@ locals {
   frontend_image = "${local.region}-docker.pkg.dev/${local.project_id}/frontend-repo/frontend:${var.image_tag}"
 }
 
+# IMPORTANT: These v2 Cloud Run resources take precedence over any similar resources 
+# defined in modules. The cloudbuild pipeline is configured to import these resources.
 # Backend API ---------------------------------------------------------------
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend-api"

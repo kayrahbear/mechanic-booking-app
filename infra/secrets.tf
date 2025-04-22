@@ -6,7 +6,7 @@ resource "google_secret_manager_secret" "sendgrid" {
 }
 
 resource "google_secret_manager_secret" "twilio" {
-  secret_id = "TWILIO_AUTH"
+  secret_id = "TWILIO_SID"
   replication {
     auto {}
   }

@@ -12,7 +12,7 @@ module "service_accounts" {
   cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
 }
 
-# Back‑end Cloud Run service
+# Back‑end Cloud Run service
 module "backend_service" {
   source = "./modules/run-service"
 
@@ -26,7 +26,7 @@ module "backend_service" {
   }
 }
 
-# Front‑end Cloud Run service
+# Front‑end Cloud Run service
 module "frontend_service" {
   source = "./modules/run-service"
 
@@ -38,12 +38,6 @@ module "frontend_service" {
   env = {
     NEXT_PUBLIC_API_BASE = module.backend_service.url
   }
-}
-
-module "queue" {
-  source     = "./modules/cloud-tasks"
-  project_id = var.project_id
-  region     = var.region
 }
 
 module "secrets" {
