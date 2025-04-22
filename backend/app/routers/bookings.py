@@ -12,6 +12,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole
 from ..firestore import get_client
 from ..auth import get_current_user
+from ..notifications import send_booking_notification
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -73,8 +74,8 @@ async def create_booking(
         # Execute booking process with retries for transient errors
         booking = await create_booking_with_transaction(db, payload)
         
-        # Add background task for notifications (will be implemented in Task 10)
-        # background_tasks.add_task(send_booking_notification, booking)
+        # Add background task for notifications
+        background_tasks.add_task(send_booking_notification, booking)
         
         return booking
         
