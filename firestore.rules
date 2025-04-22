@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Common functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.email in [
+               'admin@auto-mech-booking.com',
+               // Add admin emails here
+             ];
+    }
+    
+    function ownsBooking(bookingData) {
+      return isAuthenticated() && 
+             bookingData.customer_email == request.auth.token.email;
+    }
+    
+    // Services can be read by anyone but only modified by admins
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Availability slots can be read by anyone but only created/updated by admins
+    match /availability/{day} {
+      allow read: if true;
+      allow create, update: if isAdmin();
+      allow delete: if false; // Never delete availability history
+    }
+    
+    // Bookings can be created by authenticated users,
+    // but users can only read their own bookings
+    match /bookings/{bookingId} {
+      allow create: if isAuthenticated() && 
+                     request.resource.data.customer_email == request.auth.token.email;
+      allow read: if isAdmin() || ownsBooking(resource.data);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Mechanics can only be managed by admins
+    match /mechanics/{mechanicId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // User profiles - users can read/write only their own profile
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin();
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 
