@@ -5,6 +5,11 @@ resource "google_firestore_database" "default" {
   name        = "(default)"
   location_id = var.region
   type        = "FIRESTORE_NATIVE"
+
+  timeouts {
+    create = "5m"
+    update = "5m"
+  }
 }
 
 module "service_accounts" {

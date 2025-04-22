@@ -102,14 +102,19 @@ steps:
         -var="project_id=${PROJECT_ID}" \
         -var="region=${_REGION}" \
         -var="image_tag=${SHORT_SHA}" \
-        -var="cloud_build_sa=${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+        -var="cloud_build_sa=${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+        -parallelism=10 \
+        -timeout=2m
 
-      # Now apply the real changes
-      terraform apply -auto-approve -input=false \
+      echo "Starting actual Terraform apply with 5-minute timeout..."
+      # Now apply the real changes with more verbose output
+      TF_LOG=INFO terraform apply -auto-approve -input=false \
         -var="project_id=${PROJECT_ID}" \
         -var="region=${_REGION}" \
         -var="image_tag=${SHORT_SHA}" \
-        -var="cloud_build_sa=${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+        -var="cloud_build_sa=${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+        -parallelism=10 \
+        -timeout=5m
 
 ###############################################################################
 # (optional) Slack / webhook notifier

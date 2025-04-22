@@ -31,6 +31,12 @@ resource "google_cloud_run_v2_service" "backend" {
       }
     }
   }
+
+  timeouts {
+    create = "3m"
+    update = "3m"
+    delete = "2m"
+  }
 }
 
 # Allow the frontend SA to invoke backend
@@ -56,6 +62,12 @@ resource "google_cloud_run_v2_service" "frontend" {
         value = google_cloud_run_v2_service.backend.uri
       }
     }
+  }
+
+  timeouts {
+    create = "3m"
+    update = "3m"
+    delete = "2m"
   }
 }
 
