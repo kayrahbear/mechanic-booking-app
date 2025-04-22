@@ -1,0 +1,112 @@
+# cursor.config.toml
+
+##########################
+# 1. Globally ignore these
+##########################
+[settings]
+ignore = [
+  "node_modules/",
+  "frontend/.next/",
+  "backend/.venv/",
+  "**/__pycache__/",
+  "infra/.terraform/",
+  ".terraform/",
+  ".git/"
+]
+
+##################################################
+# 2. Force file‐type associations & language modes
+##################################################
+[language_overrides]
+"*.tf"    = "terraform"
+"*.py"    = "python"
+"*.js"    = "javascript"
+"*.jsx"   = "javascriptreact"
+"*.ts"    = "typescript"
+"*.tsx"   = "typescriptreact"
+
+##################################
+# 3. Project‑wide environment vars
+##################################
+[env]
+GCLOUD_PROJECT       = "auto-mech-booking"
+GCLOUD_REGION        = "us-central1"
+FIRESTORE_EMULATOR   = "localhost:8080"
+SENDGRID_KEY_ENV_VAR = "SENDGRID_KEY"
+TWILIO_SID_ENV_VAR   = "TWILIO_SID"
+
+####################################
+# 4. Snippet triggers & code macros
+####################################
+[[snippets]]
+name        = "FastAPI endpoint"
+trigger     = "faep"  
+description = "Generate a new FastAPI path operation skeleton"
+file_match  = "*.py"
+body = '''
+@router.{method}("{path}", response_model={response_model})
+async def {fn_name}(payload: {payload_model}):
+    """
+    {summary}
+    """
+    try:
+        # TODO: implement
+        pass
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+'''
+
+[[snippets]]
+name        = "Next.js SSR page"
+trigger     = "npp"
+description = "Boilerplate for a getServerSideProps page"
+file_match  = "frontend/pages/**/*.tsx"
+body = '''
+import { GetServerSideProps } from 'next';
+
+interface Props {{
+  // your props here
+}}
+
+export default function {ComponentName}({{ data }}: Props) {{
+  return (
+    <div>
+      <h1>{ComponentName}</h1>
+      {/* TODO: Render data */}
+    </div>
+  );
+}}
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {{
+  // TODO: fetch data from backend-api
+  return {{ props: {{ data: null }} }};
+}};
+'''
+
+[[snippets]]
+name        = "Terraform module stub"
+trigger     = "tfmod"
+description = "Scaffold a new Terraform module directory"
+file_match  = "infra/modules/**/main.tf"
+body = '''
+# {{module_name}} module
+
+variable "project_id" {{
+  type        = string
+  description = "GCP project id"
+}}
+
+provider "google" {{
+  project = var.project_id
+}}
+
+# TODO: add your resources here
+'''
+
+###########################################
+# 5. Role‐based “advice persona” per folder
+###########################################
+[persona_overrides]
+"infra/**/*.tf"      = "You are a Terraform expert.  Suggest best practices for modules, state, and IAM."
+"backend/**/*.py"    = "You are a FastAPI/GCP Python expert.  Focus on transactions, dependency‐injection, and env‐var security."
+"frontend/**/*.{js,jsx,ts,tsx}" = "You are a Next.js/React specialist.  Use SSR patterns and getServerSideProps best practices."

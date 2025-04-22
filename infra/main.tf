@@ -5,10 +5,6 @@ resource "google_firestore_database" "default" {
   name        = "(default)"
   location_id = var.region
   type        = "FIRESTORE_NATIVE"
-
-  lifecycle {
-    ignore_changes = [all]
-  }
 }
 
 module "service_accounts" {
@@ -16,7 +12,7 @@ module "service_accounts" {
   cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
 }
 
-# Back‑end Cloud Run service
+# Back‑end Cloud Run service
 module "backend_service" {
   source = "./modules/run-service"
 
@@ -30,7 +26,7 @@ module "backend_service" {
   }
 }
 
-# Front‑end Cloud Run service
+# Front‑end Cloud Run service
 module "frontend_service" {
   source = "./modules/run-service"
 

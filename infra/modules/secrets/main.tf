@@ -6,10 +6,6 @@ resource "google_secret_manager_secret" "this" {
   replication {
     auto {}
   }
-
-  lifecycle {
-    ignore_changes = [all]
-  }
 }
 
 # initial empty version (optionally skip)

@@ -41,10 +41,6 @@ resource "google_cloud_run_service" "this" {
       }
     }
   }
-
-  lifecycle {
-    ignore_changes = [all]
-  }
 }
 
 # make service public
