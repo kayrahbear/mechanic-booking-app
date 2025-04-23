@@ -139,6 +139,12 @@ steps:
         terraform import google_secret_manager_secret.twilio "projects/${PROJECT_ID}/secrets/TWILIO_SID" || true
       fi
 
+      if terraform state list google_secret_manager_secret.firebase_web_config &>/dev/null; then
+        echo "Firebase web config secret already imported."
+      else
+        terraform import google_secret_manager_secret.firebase_web_config "projects/${PROJECT_ID}/secrets/firebase-web-config" || true
+      fi
+
       # Import module resources to avoid conflicts
       if terraform state list module.backend_service.google_cloud_run_service.this &>/dev/null; then
         echo "Module backend service already imported."
@@ -172,6 +178,12 @@ steps:
         echo "Module Stripe secret already imported."
       else
         terraform import 'module.secrets.google_secret_manager_secret.this["STRIPE_SK"]' "projects/${PROJECT_ID}/secrets/STRIPE_SK" || true
+      fi
+
+      if terraform state list 'module.secrets.google_secret_manager_secret.this["firebase-web-config"]' &>/dev/null; then
+        echo "Module Firebase web config secret already imported."
+      else
+        terraform import 'module.secrets.google_secret_manager_secret.this["firebase-web-config"]' "projects/${PROJECT_ID}/secrets/firebase-web-config" || true
       fi
 
       # Before normal apply, remove any stale resources that were commented out
