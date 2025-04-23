@@ -30,26 +30,3 @@ resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
-
-# Firebase Web Config Secret for frontend
-resource "google_secret_manager_secret" "firebase_web_config" {
-  secret_id = "firebase-web-config"
-
-  replication {
-    auto {}
-  }
-
-  labels = {
-    environment = "production"
-    project     = var.project_id
-  }
-}
-
-# IAM binding to allow Cloud Build to access the secret
-resource "google_secret_manager_secret_iam_binding" "firebase_web_config_binding" {
-  secret_id = google_secret_manager_secret.firebase_web_config.id
-  role      = "roles/secretmanager.secretAccessor"
-  members = [
-    "serviceAccount:${var.cloud_build_sa}"
-  ]
-}
