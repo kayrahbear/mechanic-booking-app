@@ -1,4 +1,5 @@
 import { GetServerSideProps } from 'next';
+import { fetchServices } from '../lib/api';
 
 interface Service {
     id: string;
@@ -7,15 +8,21 @@ interface Service {
 }
 
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
-    const services = await fetch('https://api.example.com/services')
-        .then(res => res.json())
-        .catch(() => []); // Handle errors by returning an empty array
-
-    return {
-        props: {
-            services,
-        },
-    };
+    try {
+        const services = await fetchServices();
+        return {
+            props: {
+                services,
+            },
+        };
+    } catch (error) {
+        console.error('Error fetching services:', error);
+        return {
+            props: {
+                services: [],
+            },
+        };
+    }
 };
 
 const ServicesPage = ({ services }: { services: Service[] }) => {
