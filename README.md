@@ -37,7 +37,7 @@ Firestore security rules enforce access control:
 - Node.js 16+ and Python 3.11+
 - Firebase CLI (for deploying security rules)
 
-### Local Development
+### Local Development Setup
 
 1. Clone the repository
 
