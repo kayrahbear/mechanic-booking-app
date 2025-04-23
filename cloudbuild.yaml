@@ -28,6 +28,18 @@ steps:
 ###############################################################################
 # 2  Build & push frontend container
 ###############################################################################
+
+# Add a step to fetch Firebase config from Secret Manager
+- id: fetch-firebase-config
+  name: gcr.io/cloud-builders/gcloud
+  entrypoint: bash
+  args:
+    - -c
+    - |
+      echo "Fetching Firebase config from Secret Manager..."
+      gcloud secrets versions access latest --secret=firebase-web-config --project=$PROJECT_ID > frontend/.env.local
+      echo "Firebase config fetched successfully"
+
 - id: frontend-build
   name: gcr.io/cloud-builders/docker
   dir: frontend
