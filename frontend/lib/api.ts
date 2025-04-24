@@ -1,4 +1,4 @@
-const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 export async function fetchServices() {
     const url = `${apiBase}/services`;
@@ -31,7 +31,7 @@ export async function fetchServices() {
 
 // Function to fetch available slots for a specific date and service
 export async function fetchAvailableSlots(date: string, serviceId: string) {
-    const url = `${apiBase}/availability?date=${date}&service_id=${serviceId}`;
+    const url = `${apiBase}/availability?day=${date}&service_id=${serviceId}`;
 
     const headers: Record<string, string> = {};
     // Add auth headers if needed (similar to your fetchServices function)
