@@ -1,5 +1,5 @@
 // frontend/components/BookingForm.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchAvailableSlots, createBooking } from '../lib/api';
 
@@ -40,14 +40,8 @@ export default function BookingForm({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    // Fetch available slots when date or service changes
-    useEffect(() => {
-        if (selectedDate && selectedService) {
-            loadAvailableSlots();
-        }
-    }, [selectedDate, selectedService]);
-
-    async function loadAvailableSlots() {
+    // Define loadAvailableSlots with useCallback
+    const loadAvailableSlots = useCallback(async () => {
         try {
             setIsLoading(true);
             setError('');
@@ -68,7 +62,14 @@ export default function BookingForm({
         } finally {
             setIsLoading(false);
         }
-    }
+    }, [selectedDate, selectedService]);
+
+    // Fetch available slots when date or service changes
+    useEffect(() => {
+        if (selectedDate && selectedService) {
+            loadAvailableSlots();
+        }
+    }, [selectedDate, selectedService, loadAvailableSlots]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();

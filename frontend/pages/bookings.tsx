@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '../lib/protected-route';
+import Link from 'next/link';
 
 interface Booking {
     id: string;
@@ -117,12 +118,12 @@ const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
                 )}
 
                 <div className="mt-8 text-center">
-                    <a
+                    <Link
                         href="/book"
                         className="inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md"
                     >
                         Book New Appointment
-                    </a>
+                    </Link>
                 </div>
             </div>
         </ProtectedRoute>
