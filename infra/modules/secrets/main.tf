@@ -21,10 +21,9 @@ resource "google_secret_manager_secret" "this" {
   }
 }
 
-# Don't create versions automatically - use the console or API for this
-# This prevents errors from trying to create versions on existing secrets
+# More resilient output that doesn't break on missing elements
 output "secret_ids" {
   value = {
-    for name in var.names : name => google_secret_manager_secret.this[name].id
+    for k, v in google_secret_manager_secret.this : k => v.id
   }
 }

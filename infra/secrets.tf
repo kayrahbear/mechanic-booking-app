@@ -19,29 +19,41 @@ resource "google_secret_manager_secret" "twilio" {
 # Allow backend runtime SA to access payload latest version
 resource "google_secret_manager_secret_iam_member" "back_read_sendgrid" {
   # Reference the secret by its full resource ID from the module output
-  secret_id = module.secrets.secret_ids["SENDGRID_KEY"]
+  secret_id = try(module.secrets.secret_ids["SENDGRID_KEY"], null)
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
+
+  # Only create if the secret exists
+  count = try(module.secrets.secret_ids["SENDGRID_KEY"], null) != null ? 1 : 0
 }
 
 resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
   # Reference the secret by its full resource ID from the module output
-  secret_id = module.secrets.secret_ids["TWILIO_SID"]
+  secret_id = try(module.secrets.secret_ids["TWILIO_SID"], null)
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
+
+  # Only create if the secret exists
+  count = try(module.secrets.secret_ids["TWILIO_SID"], null) != null ? 1 : 0
 }
 
 # Allow backend SA to access Google OAuth client secrets (if needed)
 resource "google_secret_manager_secret_iam_member" "back_read_google_client_id" {
-  secret_id = module.secrets.secret_ids["GOOGLE_CLIENT_ID"]
+  secret_id = try(module.secrets.secret_ids["GOOGLE_CLIENT_ID"], null)
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
+
+  # Only create if the secret exists
+  count = try(module.secrets.secret_ids["GOOGLE_CLIENT_ID"], null) != null ? 1 : 0
 }
 
 resource "google_secret_manager_secret_iam_member" "back_read_google_client_secret" {
-  secret_id = module.secrets.secret_ids["GOOGLE_CLIENT_SECRET"]
+  secret_id = try(module.secrets.secret_ids["GOOGLE_CLIENT_SECRET"], null)
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
+
+  # Only create if the secret exists
+  count = try(module.secrets.secret_ids["GOOGLE_CLIENT_SECRET"], null) != null ? 1 : 0
 }
 
 resource "google_secret_manager_secret" "calendar_sa_key" {
