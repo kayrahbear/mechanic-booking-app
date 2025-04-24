@@ -14,16 +14,19 @@ resource "google_secret_manager_secret" "this" {
     ignore_changes = [
       replication,
       labels,
-      annotations
+      annotations,
+      # Add all to ensure no conflicts with existing secrets
+      all
     ]
     # Don't destroy existing secrets
     prevent_destroy = true
   }
 }
 
-# More resilient output that doesn't break on missing elements
+# Don't create versions automatically - use the console or API for this
+# This prevents errors from trying to create versions on existing secrets
 output "secret_ids" {
   value = {
-    for k, v in google_secret_manager_secret.this : k => v.id
+    for name in var.names : name => google_secret_manager_secret.this[name].id
   }
 }

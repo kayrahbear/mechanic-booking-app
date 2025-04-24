@@ -31,7 +31,7 @@ fi
 
 # Run the secret import script
 echo "Running secret import script..."
-sh /workspace/infra/scripts/import-secrets.sh "${PROJECT_ID}" "${REGION}"
+./scripts/import-secrets.sh "${PROJECT_ID}" "${REGION}"
 
 # Apply changes with -refresh-only first to sync state
 echo "Running refresh-only apply to synchronize state..."
