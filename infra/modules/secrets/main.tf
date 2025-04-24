@@ -14,7 +14,9 @@ resource "google_secret_manager_secret" "this" {
     ignore_changes = [
       replication,
       labels,
-      annotations
+      annotations,
+      # Add all to ensure no conflicts with existing secrets
+      all
     ]
     # Don't destroy existing secrets
     prevent_destroy = true
