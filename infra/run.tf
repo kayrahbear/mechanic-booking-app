@@ -12,7 +12,7 @@ locals {
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend-api"
   location = local.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" # only frontend should call
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.backend_sa.email
