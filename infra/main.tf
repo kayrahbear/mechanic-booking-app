@@ -52,6 +52,6 @@ module "frontend_service" {
 
 module "secrets" {
   source     = "./modules/secrets"
-  names      = ["SENDGRID_KEY", "TWILIO_SID", "STRIPE_SK", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "firebase-web-config", "calendar-sync-sa"]
+  names      = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "firebase-web-config", "calendar-sync-sa"]
   project_id = var.project_id
 }

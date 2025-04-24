@@ -187,7 +187,7 @@ steps:
 
       # Remove managed secrets from state since we now use data sources
       echo "Removing any managed secrets from state since we're now using data sources..."
-      for secret_name in SENDGRID_KEY TWILIO_SID STRIPE_SK GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET firebase-web-config calendar-sync-sa; do
+      for secret_name in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET firebase-web-config calendar-sync-sa; do
         terraform state rm "module.secrets.google_secret_manager_secret.this[\"$secret_name\"]" || echo "Secret $secret_name not in state or already removed"
       done
 

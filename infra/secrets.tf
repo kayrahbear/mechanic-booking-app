@@ -16,6 +16,10 @@ resource "google_secret_manager_secret" "twilio" {
 }
 */
 
+# The following IAM bindings are commented out because the referenced secrets don't exist yet
+# Uncomment and adjust when you create these secrets
+
+/*
 # Allow backend runtime SA to access payload latest version
 resource "google_secret_manager_secret_iam_member" "back_read_sendgrid" {
   # Reference the secret by its full resource ID from the module output
@@ -30,6 +34,7 @@ resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
+*/
 
 # Allow backend SA to access Google OAuth client secrets (if needed)
 resource "google_secret_manager_secret_iam_member" "back_read_google_client_id" {
