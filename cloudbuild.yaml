@@ -87,7 +87,29 @@ steps:
   args:
     - -c
     - |
-      /workspace/infra/scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+      echo "Debugging directory structure:"
+      ls -la /workspace
+      ls -la /workspace/infra
+      ls -la /workspace/infra/scripts || echo "Scripts directory not found!"
+      
+      if [ -f "/workspace/infra/scripts/terraform-cloudbuild.sh" ]; then
+        echo "Script exists, making executable"
+        chmod +x /workspace/infra/scripts/terraform-cloudbuild.sh
+        /workspace/infra/scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+      else
+        echo "Trying with relative path..."
+        pwd
+        ls -la
+        ls -la scripts || echo "Local scripts directory not found!"
+        
+        if [ -f "scripts/terraform-cloudbuild.sh" ]; then
+          chmod +x scripts/terraform-cloudbuild.sh
+          ./scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+        else
+          echo "ERROR: terraform-cloudbuild.sh not found in any location!"
+          exit 1
+        fi
+      fi
 
 ###############################################################################
 # (optional) Slack / webhook notifier
