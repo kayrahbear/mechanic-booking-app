@@ -79,7 +79,7 @@ steps:
 # 4  Terraform apply (infra changes)
 ###############################################################################
 - id: terraform-apply
-  name: hashicorp/terraform:light          # alpine image with terraform only
+  name: hashicorp/terraform:1.6.6  # Use newer terraform version that supports import blocks
   dir: infra
   entrypoint: /bin/sh                      # <— key fix: run shell, not terraform
   env:
@@ -87,8 +87,8 @@ steps:
   args:
     - -c
     - |
-      # Initialize terraform
-      terraform init \
+      # Initialize terraform with upgrade flag to ensure plugins are installed
+      terraform init -upgrade \
         -backend-config="bucket=tfstate-${PROJECT_ID}" \
         -backend-config="prefix=live"
 

@@ -1,7 +1,7 @@
 variable "names" { type = list(string) }
 variable "project_id" { type = string }
 
-# Use data sources to reference existing secrets
+# Use data sources to reference existing secrets that must already exist
 data "google_secret_manager_secret" "existing" {
   for_each  = toset(var.names)
   project   = var.project_id
