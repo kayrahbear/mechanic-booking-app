@@ -3,10 +3,15 @@ FROM node:20-bullseye
 WORKDIR /app
 
 ENV PORT=3000
+ENV NODE_ENV=development
 
 # Install dependencies
 COPY package.json package-lock.json* ./
 RUN npm ci --legacy-peer-deps
+RUN npm install firebase@10.14.1 --save
+
+# Create a .env.local file for Firebase config
+RUN touch .env.local
 
 # Copy source code
 COPY . .
