@@ -45,7 +45,7 @@ resource "google_project_iam_member" "backend_tasks_publisher" {
 }
 
 resource "google_secret_manager_secret_iam_member" "calendar_sa_reader" {
-  secret_id = google_secret_manager_secret.calendar_sa_key.id
+  secret_id = module.secrets.secret_ids["calendar-sync-sa"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }

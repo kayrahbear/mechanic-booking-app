@@ -1,38 +1,16 @@
 variable "names" { type = list(string) }
 variable "project_id" { type = string }
 
-# Import block to handle existing secrets
-# This is a no-op if the secret is already in state
-import {
-  for_each = toset(var.names)
-  id       = "projects/${var.project_id}/secrets/${each.value}"
-  to       = google_secret_manager_secret.this[each.value]
-}
-
-# Simpler, more reliable approach using data sources
-resource "google_secret_manager_secret" "this" {
+# Use data sources to reference existing secrets
+data "google_secret_manager_secret" "existing" {
   for_each  = toset(var.names)
+  project   = var.project_id
   secret_id = each.value
-  replication {
-    auto {}
-  }
-
-  lifecycle {
-    # Prevent errors when secrets already exist
-    ignore_changes = [
-      replication,
-      labels,
-      annotations
-    ]
-    # Don't destroy existing secrets
-    prevent_destroy = true
-  }
 }
 
-# Don't create versions automatically - use the console or API for this
-# This prevents errors from trying to create versions on existing secrets
+# Output the IDs of the secrets
 output "secret_ids" {
   value = {
-    for name in var.names : name => google_secret_manager_secret.this[name].id
+    for name in var.names : name => data.google_secret_manager_secret.existing[name].id
   }
 }

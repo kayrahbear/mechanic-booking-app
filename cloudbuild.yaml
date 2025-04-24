@@ -153,58 +153,6 @@ steps:
         # terraform import module.backend_service.google_cloud_run_service.this "${_REGION}/backend-api" || true
       fi
 
-      # Remove any secret versions from state first to avoid conflicts
-      if terraform state list | grep -q "module.secrets.google_secret_manager_secret_version"; then
-        echo "Removing secret versions from state to avoid conflicts..."
-        terraform state rm 'module.secrets.google_secret_manager_secret_version.init["SENDGRID_KEY"]' || true
-        terraform state rm 'module.secrets.google_secret_manager_secret_version.init["TWILIO_SID"]' || true
-        terraform state rm 'module.secrets.google_secret_manager_secret_version.init["STRIPE_SK"]' || true
-      fi
-
-      # Use proper quoting for the state list commands
-      if terraform state list 'module.secrets.google_secret_manager_secret.this["SENDGRID_KEY"]' &>/dev/null; then
-        echo "Module SendGrid secret already imported."
-      else
-        terraform import 'module.secrets.google_secret_manager_secret.this["SENDGRID_KEY"]' "projects/${PROJECT_ID}/secrets/SENDGRID_KEY" || true
-      fi
-
-      if terraform state list 'module.secrets.google_secret_manager_secret.this["TWILIO_SID"]' &>/dev/null; then
-        echo "Module Twilio secret already imported."
-      else
-        terraform import 'module.secrets.google_secret_manager_secret.this["TWILIO_SID"]' "projects/${PROJECT_ID}/secrets/TWILIO_SID" || true
-      fi
-
-      if terraform state list 'module.secrets.google_secret_manager_secret.this["STRIPE_SK"]' &>/dev/null; then
-        echo "Module Stripe secret already imported."
-      else
-        terraform import 'module.secrets.google_secret_manager_secret.this["STRIPE_SK"]' "projects/${PROJECT_ID}/secrets/STRIPE_SK" || true
-      fi
-
-      if terraform state list 'module.secrets.google_secret_manager_secret.this["firebase-web-config"]' &>/dev/null; then
-        echo "Module Firebase web config secret already imported."
-      else
-        terraform import 'module.secrets.google_secret_manager_secret.this["firebase-web-config"]' "projects/${PROJECT_ID}/secrets/firebase-web-config" || true
-      fi
-
-      # Import Google OAuth client secrets for Calendar integration
-      if terraform state list 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_ID"]' &>/dev/null; then
-        echo "Module Google client ID secret already imported."
-      else
-        terraform import 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_ID"]' "projects/${PROJECT_ID}/secrets/GOOGLE_CLIENT_ID" || true
-      fi
-
-      if terraform state list 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_SECRET"]' &>/dev/null; then
-        echo "Module Google client secret already imported."
-      else
-        terraform import 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_SECRET"]' "projects/${PROJECT_ID}/secrets/GOOGLE_CLIENT_SECRET" || true
-      fi
-
-      if terraform state list google_secret_manager_secret.calendar_sa_key &>/dev/null; then
-        echo "Calendar SA secret already imported."
-      else
-        terraform import google_secret_manager_secret.calendar_sa_key "projects/${PROJECT_ID}/secrets/calendar-sync-sa" || true
-      fi
-
       # Before normal apply, remove any stale resources that were commented out
       echo "Checking for stale resources to remove from state..."
       
@@ -232,14 +180,16 @@ steps:
         fi
       fi
 
-      # Force import all secrets before apply to ensure they're in state
-      echo "Ensuring all secrets are imported into Terraform state..."
-      for secret_name in SENDGRID_KEY TWILIO_SID STRIPE_SK GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET firebase-web-config; do
-        echo "Importing $secret_name secret..."
-        terraform import "module.secrets.google_secret_manager_secret.this[\"$secret_name\"]" "projects/${PROJECT_ID}/secrets/${secret_name}" || echo "Import of $secret_name failed, but continuing..."
+      if terraform state list | grep -q "google_secret_manager_secret.calendar_sa_key"; then
+        echo "Removing directly managed calendar_sa_key from state as it's now in the module..."
+        terraform state rm google_secret_manager_secret.calendar_sa_key || true
+      fi
+
+      # Remove managed secrets from state since we now use data sources
+      echo "Removing any managed secrets from state since we're now using data sources..."
+      for secret_name in SENDGRID_KEY TWILIO_SID STRIPE_SK GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET firebase-web-config calendar-sync-sa; do
+        terraform state rm "module.secrets.google_secret_manager_secret.this[\"$secret_name\"]" || echo "Secret $secret_name not in state or already removed"
       done
-      echo "Importing calendar-sync-sa secret..."
-      terraform import google_secret_manager_secret.calendar_sa_key "projects/${PROJECT_ID}/secrets/calendar-sync-sa" || echo "Import of calendar-sync-sa failed, but continuing..."
 
       # Apply changes with -refresh-only first to sync state, then apply actual changes
       terraform apply -refresh-only -auto-approve -input=false \

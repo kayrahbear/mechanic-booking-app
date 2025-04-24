@@ -45,27 +45,13 @@ resource "google_secret_manager_secret_iam_member" "back_read_google_client_secr
 }
 
 # Allow backend SA to access the calendar-sync-sa secret 
+# Commenting this out to avoid duplicate bindings
+/*
 resource "google_secret_manager_secret_iam_member" "back_read_calendar_sa" {
   secret_id = module.secrets.secret_ids["calendar-sync-sa"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
-
-/* Also commenting out this resource since it's now included in the secrets module
-resource "google_secret_manager_secret" "calendar_sa_key" {
-  secret_id = "calendar-sync-sa" # JSON key for calendar-sync service account
-  replication {
-    auto {}
-  }
-  lifecycle {
-    prevent_destroy = true
-    # Prevent errors when secret already exists
-    ignore_changes = [
-      replication,
-      # Add any other fields that might cause conflicts
-      labels,
-      annotations
-    ]
-  }
-}
 */
+
+# The calendar-sync-sa secret is now managed through the secrets module in main.tf

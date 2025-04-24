@@ -11,7 +11,7 @@ locals {
 # Backend API ---------------------------------------------------------------
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend-api"
-  location = local.region
+  location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
@@ -52,7 +52,7 @@ resource "google_cloud_run_v2_service" "backend" {
     volumes {
       name = "calendar-sa-key"
       secret {
-        secret = google_secret_manager_secret.calendar_sa_key.id
+        secret = module.secrets.secret_ids["calendar-sync-sa"]
         items {
           path    = "key.json"
           version = "latest"
@@ -68,8 +68,9 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 
   # This depends_on is needed to avoid circular dependency
-  # because the backend references the worker's URI
-  depends_on = [google_cloud_run_v2_service.worker]
+  depends_on = [
+    google_cloud_run_v2_service.worker
+  ]
 }
 
 # Allow the frontend SA to invoke backend
@@ -158,7 +159,7 @@ resource "google_cloud_run_v2_service" "worker" {
     volumes {
       name = "calendar-sa-key"
       secret {
-        secret = google_secret_manager_secret.calendar_sa_key.id
+        secret = module.secrets.secret_ids["calendar-sync-sa"]
         items {
           path    = "key.json"
           version = "latest"
@@ -172,6 +173,12 @@ resource "google_cloud_run_v2_service" "worker" {
     update = "3m"
     delete = "2m"
   }
+  
+  # Just depend on worker, we no longer need to depend on module.secrets
+  # since it's now using data sources instead of creating resources
+  depends_on = [
+    google_cloud_run_v2_service.worker
+  ]
 }
 
 # Allow Cloud Tasks to invoke the worker
