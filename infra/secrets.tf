@@ -30,3 +30,25 @@ resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
+
+# docs: google_secret_manager_secret + google_secret_manager_secret_version
+resource "google_secret_manager_secret" "calendar_sa_key" {
+  secret_id = "CALENDAR_SA_KEY"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "oauth_client_id" {
+  secret_id = "GOOGLE_CLIENT_ID"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "oauth_client_secret" {
+  secret_id = "GOOGLE_CLIENT_SECRET"
+  replication {
+    auto {}
+  }
+}

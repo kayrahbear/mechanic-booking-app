@@ -96,15 +96,49 @@ resource "google_cloud_run_v2_service" "worker" {
 
   template {
     service_account = google_service_account.backend_sa.email
+
+    # ───── container ─────
     containers {
-      image = local.worker_image
+      image = local.backend_image
+
+      # normal envs …
       env {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = var.project_id
       }
       env {
-        name  = "ENV"
-        value = "production"
+        name  = "REGION"
+        value = var.region
+      }
+
+      # tell Google libs where to find credentials
+      env {
+        name  = "GOOGLE_APPLICATION_CREDENTIALS"
+        value = "/var/secrets/calendar/key.json"
+      }
+
+      # optional: which calendar to write to
+      env {
+        name  = "CALENDAR_ID"
+        value = "primary" # or an explicit calendarId
+      }
+
+      # mount the secret as a file
+      volume_mounts {
+        name       = "calendar-sa-key"
+        mount_path = "/var/secrets/calendar"
+      }
+    }
+
+    # ───── volumes ─────
+    volumes {
+      name = "calendar-sa-key"
+      secret {
+        secret = google_secret_manager_secret.calendar_sa_key.id
+        items {
+          path    = "key.json"
+          version = "latest"
+        }
       }
     }
   }

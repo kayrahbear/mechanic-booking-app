@@ -15,3 +15,7 @@ cursor.config.toml
 # ── Python ─────────────────────────────
 __pycache__/
 *.pyc
+
+
+# ── Google Calendar ─────────────────────────────
+backend/.dev_secrets/calendar-sa-key.json

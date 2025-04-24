@@ -1,6 +1,6 @@
 # Mechanic Scheduling App
 
-### Follow Progress: [Notion Kanban Board](https://www.notion.so/Board-1d9a7ae26817816cbafbce6e5ff7c608?pvs=4)
+### Follow Progress: [Notion Kanban Board](https://graceful-bougon-a08.notion.site/Board-1d9a7ae26817816cbafbce6e5ff7c608)
 
 ## Services Overview
 

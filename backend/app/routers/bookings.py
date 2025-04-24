@@ -13,6 +13,8 @@ from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserR
 from ..firestore import get_client
 from ..auth import get_current_user
 from ..notifications import send_booking_notification
+from ..google_calendar import create_event
+from google.api_core.exceptions import GoogleAPIError
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -163,6 +165,14 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     
     # Return the fully-populated booking
     booking_id = booking_ref.id
+
+    try:
+        calendar_event_id = create_event(booking_out)   # returns id string
+        db.collection("bookings").document(booking_id).update({
+            "calendar_event_id": calendar_event_id
+        })
+    except GoogleAPIError as e:
+        logger.error("Calendar sync failed for booking %s: %s", booking_id, e.message)
     
     # Create a response object without the SERVER_TIMESTAMP values
     response_data = booking_data.copy()

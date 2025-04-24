@@ -186,6 +186,12 @@ steps:
         terraform import 'module.secrets.google_secret_manager_secret.this["firebase-web-config"]' "projects/${PROJECT_ID}/secrets/firebase-web-config" || true
       fi
 
+      if terraform state list google_secret_manager_secret.calendar_sa_key &>/dev/null; then
+        echo "Calendar SA secret already imported."
+      else
+        terraform import google_secret_manager_secret.calendar_sa_key "projects/${PROJECT_ID}/secrets/CALENDAR_SA_KEY" || true
+      fi
+
       # Before normal apply, remove any stale resources that were commented out
       echo "Checking for stale resources to remove from state..."
       

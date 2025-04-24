@@ -43,3 +43,9 @@ resource "google_project_iam_member" "backend_tasks_publisher" {
   role    = "roles/cloudtasks.enqueuer"
   member  = "serviceAccount:${google_service_account.backend_sa.email}"
 }
+
+resource "google_secret_manager_secret_iam_member" "calendar_sa_reader" {
+  secret_id = google_secret_manager_secret.calendar_sa_key.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
+}
