@@ -5,7 +5,8 @@ set -e
 # Get args
 PROJECT_ID=$1
 REGION=$2
-TERRAFORM_DIR=$(dirname $(dirname $0))  # Go up one directory from scripts/
+# Simplify dir calculation to avoid syntax issues
+TERRAFORM_DIR="/workspace/infra"
 
 cd $TERRAFORM_DIR
 
