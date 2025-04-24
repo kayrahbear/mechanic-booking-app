@@ -166,13 +166,12 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     # Return the fully-populated booking
     booking_id = booking_ref.id
 
-    try:
-        calendar_event_id = create_event(booking_out)   # returns id string
-        db.collection("bookings").document(booking_id).update({
-            "calendar_event_id": calendar_event_id
-        })
-    except GoogleAPIError as e:
-        logger.error("Calendar sync failed for booking %s: %s", booking_id, e.message)
+    # Fetch the booking data
+    booking_doc = db.collection("bookings").document(booking_id).get()
+    if not booking_doc.exists:
+        raise BookingError("Booking not found")
+    
+    booking_data = booking_doc.to_dict()
     
     # Create a response object without the SERVER_TIMESTAMP values
     response_data = booking_data.copy()
@@ -181,7 +180,22 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     response_data["created_at"] = current_time
     response_data["updated_at"] = current_time
     
-    return BookingOut(id=booking_id, **response_data)
+    # Construct the BookingOut model instance we will return
+    booking_out = BookingOut(id=booking_id, **response_data)
+
+    # Attempt to create a Google Calendar event for the booking
+    try:
+        calendar_event_id = create_event(booking_out)  # returns id string
+        # Persist the event ID in Firestore (best-effort)
+        db.collection("bookings").document(booking_id).update({
+            "calendar_event_id": calendar_event_id
+        })
+        # Include it in the API response as well
+        booking_out.calendar_event_id = calendar_event_id
+    except GoogleAPIError as e:
+        logger.error("Calendar sync failed for booking %s: %s", booking_id, e.message)
+
+    return booking_out
 
 @router.get("", response_model=List[BookingOut])
 async def get_bookings(

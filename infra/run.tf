@@ -34,6 +34,30 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "WORKER_SERVICE_URL"
         value = google_cloud_run_v2_service.worker.uri
       }
+      env {
+        name  = "GOOGLE_APPLICATION_CREDENTIALS"
+        value = "/var/secrets/calendar/key.json"
+      }
+      env {
+        name  = "CALENDAR_ID"
+        value = "primary"
+      }
+      volume_mounts {
+        name       = "calendar-sa-key"
+        mount_path = "/var/secrets/calendar"
+      }
+    }
+
+    # ───── volumes ─────
+    volumes {
+      name = "calendar-sa-key"
+      secret {
+        secret = google_secret_manager_secret.calendar_sa_key.id
+        items {
+          path    = "key.json"
+          version = "latest"
+        }
+      }
     }
   }
 

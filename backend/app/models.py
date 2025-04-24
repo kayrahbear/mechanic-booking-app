@@ -58,6 +58,7 @@ class BookingOut(BookingCreate):
     status: str = BookingStatus.CONFIRMED.value  # Using the string value
     service_name: str = ""  # Added for denormalization
     service_price: float = 0.0  # Added for denormalization
+    calendar_event_id: Optional[str] = None  # Google Calendar event ID
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

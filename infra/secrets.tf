@@ -31,24 +31,26 @@ resource "google_secret_manager_secret_iam_member" "back_read_twilio" {
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
-# docs: google_secret_manager_secret + google_secret_manager_secret_version
+# Allow backend SA to access Google OAuth client secrets (if needed)
+resource "google_secret_manager_secret_iam_member" "back_read_google_client_id" {
+  secret_id = module.secrets.secret_ids["GOOGLE_CLIENT_ID"]
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "back_read_google_client_secret" {
+  secret_id = module.secrets.secret_ids["GOOGLE_CLIENT_SECRET"]
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
+}
+
 resource "google_secret_manager_secret" "calendar_sa_key" {
-  secret_id = "CALENDAR_SA_KEY"
+  secret_id = "calendar-sync-sa" # JSON key for calendar-sync service account
   replication {
     auto {}
   }
-}
-
-resource "google_secret_manager_secret" "oauth_client_id" {
-  secret_id = "GOOGLE_CLIENT_ID"
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret" "oauth_client_secret" {
-  secret_id = "GOOGLE_CLIENT_SECRET"
-  replication {
-    auto {}
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [replication]
   }
 }

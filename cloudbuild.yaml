@@ -186,10 +186,23 @@ steps:
         terraform import 'module.secrets.google_secret_manager_secret.this["firebase-web-config"]' "projects/${PROJECT_ID}/secrets/firebase-web-config" || true
       fi
 
+      # Import Google OAuth client secrets for Calendar integration
+      if terraform state list 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_ID"]' &>/dev/null; then
+        echo "Module Google client ID secret already imported."
+      else
+        terraform import 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_ID"]' "projects/${PROJECT_ID}/secrets/GOOGLE_CLIENT_ID" || true
+      fi
+
+      if terraform state list 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_SECRET"]' &>/dev/null; then
+        echo "Module Google client secret already imported."
+      else
+        terraform import 'module.secrets.google_secret_manager_secret.this["GOOGLE_CLIENT_SECRET"]' "projects/${PROJECT_ID}/secrets/GOOGLE_CLIENT_SECRET" || true
+      fi
+
       if terraform state list google_secret_manager_secret.calendar_sa_key &>/dev/null; then
         echo "Calendar SA secret already imported."
       else
-        terraform import google_secret_manager_secret.calendar_sa_key "projects/${PROJECT_ID}/secrets/CALENDAR_SA_KEY" || true
+        terraform import google_secret_manager_secret.calendar_sa_key "projects/${PROJECT_ID}/secrets/calendar-sync-sa" || true
       fi
 
       # Before normal apply, remove any stale resources that were commented out
