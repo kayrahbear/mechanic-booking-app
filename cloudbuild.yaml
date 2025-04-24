@@ -95,7 +95,8 @@ steps:
       if [ -f "/workspace/infra/scripts/terraform-cloudbuild.sh" ]; then
         echo "Script exists, making executable"
         chmod +x /workspace/infra/scripts/terraform-cloudbuild.sh
-        /workspace/infra/scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+        echo "Running script with sh"
+        sh /workspace/infra/scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
       else
         echo "Trying with relative path..."
         pwd
