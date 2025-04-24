@@ -28,3 +28,68 @@ export async function fetchServices() {
     if (!res.ok) throw new Error(`Failed to load services – ${res.status}`);
     return res.json();
 }
+
+// Function to fetch available slots for a specific date and service
+export async function fetchAvailableSlots(date: string, serviceId: string) {
+    const url = `${apiBase}/availability?date=${date}&service_id=${serviceId}`;
+
+    const headers: Record<string, string> = {};
+    // Add auth headers if needed (similar to your fetchServices function)
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`Failed to load availability – ${res.status}`);
+    return res.json();
+}
+
+// Function to create a new booking
+export async function createBooking(bookingData: {
+    service_id: string;
+    slot_start: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone?: string;
+    notes?: string;
+}) {
+    const url = `${apiBase}/bookings`;
+
+    // Get auth token if needed
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+
+    // If running in browser, we'll need to add the Firebase auth token
+    if (typeof window !== "undefined") {
+        const token = await getFirebaseAuthToken(); // You'll need to implement this
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+    }
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(bookingData)
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to create booking – ${res.status}`);
+    }
+
+    return res.json();
+}
+
+// Helper to get Firebase auth token - implement this based on your authentication setup
+async function getFirebaseAuthToken() {
+    // If you're using Firebase auth, get the current user's ID token
+    // Example (adjust based on your auth implementation):
+    try {
+        const { auth } = await import('./firebase');
+        if (auth.currentUser) {
+            return await auth.currentUser.getIdToken();
+        }
+    } catch (error) {
+        console.error("Error getting auth token:", error);
+    }
+    return null;
+}
