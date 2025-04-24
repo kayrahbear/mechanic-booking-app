@@ -5,14 +5,15 @@ export async function fetchServices() {
 
     // Build headers – add an identity token when running inside Cloud Run
     const headers: Record<string, string> = {};
-    const audience = process.env.BACKEND_BASE_URL!.replace(/\/$/, ''); // strip slash
 
-    if (typeof window === "undefined" && process.env.GOOGLE_CLOUD_PROJECT) {
+    if (typeof window === "undefined") {
         try {
-            const tokenResp = await fetch(
-                `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(audience)}`,
-                { headers: { 'Metadata-Flavor': 'Google' } }
-            );
+            const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(apiBase)}&format=full`;
+            const tokenResp = await fetch(metadataURL, {
+                headers: { "Metadata-Flavor": "Google" }
+            });
+            console.log("identity token fetch", tokenResp.status, metadataURL);
+
             if (tokenResp.ok) {
                 const token = await tokenResp.text();
                 headers["Authorization"] = `Bearer ${token}`;
