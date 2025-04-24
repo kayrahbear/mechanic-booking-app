@@ -57,9 +57,7 @@ resource "google_secret_manager_secret" "calendar_sa_key" {
       # Add any other fields that might cause conflicts
       labels,
       annotations,
-      secret_id, # Also ignore the secret_id to prevent conflicts
-      # Ignore all attributes to ensure no conflict when already exists
-      all
+      secret_id # Also ignore the secret_id to prevent conflicts
     ]
   }
 }
