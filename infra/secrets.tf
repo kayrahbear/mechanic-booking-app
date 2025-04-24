@@ -51,6 +51,12 @@ resource "google_secret_manager_secret" "calendar_sa_key" {
   }
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [replication]
+    # Prevent errors when secret already exists
+    ignore_changes = [
+      replication,
+      # Add any other fields that might cause conflicts
+      labels,
+      annotations
+    ]
   }
 }

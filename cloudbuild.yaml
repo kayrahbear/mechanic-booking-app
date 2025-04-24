@@ -232,6 +232,15 @@ steps:
         fi
       fi
 
+      # Force import all secrets before apply to ensure they're in state
+      echo "Ensuring all secrets are imported into Terraform state..."
+      for secret_name in SENDGRID_KEY TWILIO_SID STRIPE_SK GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET firebase-web-config; do
+        echo "Importing $secret_name secret..."
+        terraform import "module.secrets.google_secret_manager_secret.this[\"$secret_name\"]" "projects/${PROJECT_ID}/secrets/${secret_name}" || echo "Import of $secret_name failed, but continuing..."
+      done
+      echo "Importing calendar-sync-sa secret..."
+      terraform import google_secret_manager_secret.calendar_sa_key "projects/${PROJECT_ID}/secrets/calendar-sync-sa" || echo "Import of calendar-sync-sa failed, but continuing..."
+
       # Apply changes with -refresh-only first to sync state, then apply actual changes
       terraform apply -refresh-only -auto-approve -input=false \
         -var="project_id=${PROJECT_ID}" \

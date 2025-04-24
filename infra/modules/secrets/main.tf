@@ -13,6 +13,8 @@ resource "google_secret_manager_secret" "this" {
     # Prevent errors when secrets already exist
     ignore_changes = [
       replication,
+      labels,
+      annotations
     ]
     # Don't destroy existing secrets
     prevent_destroy = true
