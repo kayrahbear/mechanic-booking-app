@@ -1,6 +1,14 @@
 variable "names" { type = list(string) }
 variable "project_id" { type = string }
 
+# Import block to handle existing secrets
+# This is a no-op if the secret is already in state
+import {
+  for_each = toset(var.names)
+  id       = "projects/${var.project_id}/secrets/${each.value}"
+  to       = google_secret_manager_secret.this[each.value]
+}
+
 # Simpler, more reliable approach using data sources
 resource "google_secret_manager_secret" "this" {
   for_each  = toset(var.names)

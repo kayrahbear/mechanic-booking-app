@@ -44,6 +44,14 @@ resource "google_secret_manager_secret_iam_member" "back_read_google_client_secr
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
+# Allow backend SA to access the calendar-sync-sa secret 
+resource "google_secret_manager_secret_iam_member" "back_read_calendar_sa" {
+  secret_id = module.secrets.secret_ids["calendar-sync-sa"]
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
+}
+
+/* Also commenting out this resource since it's now included in the secrets module
 resource "google_secret_manager_secret" "calendar_sa_key" {
   secret_id = "calendar-sync-sa" # JSON key for calendar-sync service account
   replication {
@@ -60,3 +68,4 @@ resource "google_secret_manager_secret" "calendar_sa_key" {
     ]
   }
 }
+*/
