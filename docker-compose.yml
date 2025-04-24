@@ -9,9 +9,14 @@ services:
       - ~/.config/gcloud/application_default_credentials.json:/secrets/adc.json:ro
 
   frontend:
-    build: ./frontend
-    ports: [ "3000:8080" ]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports: [ "3000:3000" ]
     environment:
       - NEXT_PUBLIC_API_BASE=http://backend:8080
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend

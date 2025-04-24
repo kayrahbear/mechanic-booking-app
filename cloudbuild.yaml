@@ -87,7 +87,7 @@ steps:
   args:
     - -c
     - |
-      ./scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+      ./backend/scripts/terraform-cloudbuild.sh "$PROJECT_ID" "${_REGION}" "$SHORT_SHA" "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
 
 ###############################################################################
 # (optional) Slack / webhook notifier
