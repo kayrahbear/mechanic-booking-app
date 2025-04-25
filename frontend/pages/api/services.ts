@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Read the backend URL from environment variables
 // Ensure this is set in your deployment environment (e.g., Cloud Run service)
-const apiUrl = process.env.BACKEND_API_BASE || 'http://localhost:8000'; // Use BACKEND_API_BASE
+const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
 console.log(`[API Route /api/services] Using backend API URL: ${apiUrl}`); // Log the URL being used
 

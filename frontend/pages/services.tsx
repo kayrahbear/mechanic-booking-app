@@ -10,7 +10,8 @@ interface Service {
     price: number;
 }
 
-const backendUrl = process.env.BACKEND_API_BASE || 'http://localhost:8000';
+// Use NEXT_PUBLIC_API_BASE from the environment variables instead of BACKEND_API_BASE
+const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
     console.log(`[getServerSideProps /services] Fetching from backend: ${backendUrl}/services`);
