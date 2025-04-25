@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import { fetchServices } from '../lib/api';
+import axios from 'axios';
 
 interface Service {
     id: string;
@@ -10,16 +10,31 @@ interface Service {
     price: number;
 }
 
+const backendUrl = process.env.BACKEND_API_BASE || 'http://localhost:8000';
+
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
+    console.log(`[getServerSideProps /services] Fetching from backend: ${backendUrl}/services`);
     try {
-        const services = await fetchServices();
+        const response = await axios.get(`${backendUrl}/services`, {
+            timeout: 5000
+        });
+        const services = response.data || [];
+        console.log(`[getServerSideProps /services] Received ${services.length} services from backend.`);
         return {
             props: {
                 services,
             },
         };
     } catch (error) {
-        console.error('Error fetching services:', error);
+        console.error('[getServerSideProps /services] Error fetching services directly from backend:', error);
+        if (axios.isAxiosError(error)) {
+            console.error('[getServerSideProps /services] Axios error details:', {
+                message: error.message,
+                code: error.code,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+        }
         return {
             props: {
                 services: [],
@@ -49,7 +64,7 @@ const ServicesPage = ({ services }: { services: Service[] }) => {
                             </div>
                             <Link
                                 href={`/book?service_id=${service.id}`}
-                                className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-4 rounded-md"
+                                className="mt-4 block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-4 rounded-md"
                             >
                                 Book Now
                             </Link>
