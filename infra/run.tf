@@ -92,7 +92,7 @@ resource "google_cloud_run_v2_service" "frontend" {
     containers {
       image = local.frontend_image
       env {
-        name  = "BACKEND_BASE_URL"
+        name  = "NEXT_PUBLIC_API_BASE"
         value = google_cloud_run_v2_service.backend.uri
       }
     }
