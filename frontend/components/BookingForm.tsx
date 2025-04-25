@@ -90,13 +90,29 @@ export default function BookingForm({
             // Format the date and time for the API
             const bookingDateTime = `${selectedDate}T${selectedTime}:00`;
 
+            // Find selected service details
+            const service = services.find(s => s.id === selectedService);
+            if (!service) {
+                throw new Error('Selected service not found');
+            }
+
+            // Calculate end time based on service duration
+            const startDate = new Date(bookingDateTime);
+            const endDate = new Date(startDate.getTime() + service.minutes * 60000);
+            const slot_end = endDate.toISOString();
+
             await createBooking({
                 service_id: selectedService,
+                service_name: service.name,
+                service_price: service.price,
                 slot_start: bookingDateTime,
+                slot_end: slot_end,
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_phone: customerPhone || undefined,
-                notes: notes || undefined
+                notes: notes || undefined,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             });
 
             // Redirect to bookings page on success
