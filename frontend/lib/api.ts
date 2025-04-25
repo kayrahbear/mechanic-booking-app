@@ -1,3 +1,5 @@
+import { auth } from './firebase';
+
 const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 export async function fetchServices() {
@@ -72,11 +74,24 @@ export async function createBooking(bookingData: {
     // Use the Next.js API route instead of calling the backend directly
     const url = `/api/bookings`;
 
+    // Build headers
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+
+    // If running in the browser and the user is logged in, include a Firebase ID token
+    if (typeof window !== 'undefined' && auth.currentUser) {
+        try {
+            const idToken = await auth.currentUser.getIdToken();
+            headers['Authorization'] = `Bearer ${idToken}`;
+        } catch (err) {
+            console.error('Failed to obtain Firebase ID token', err);
+        }
+    }
+
     const res = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify(bookingData)
     });
 
