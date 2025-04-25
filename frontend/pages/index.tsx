@@ -9,7 +9,6 @@ export default function Home() {
         <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-16">
                 <h1 className="text-4xl font-bold mb-4 text-neutral-900 dark:text-white">Mechanic Scheduling App</h1>
-                <p className="text-xl text-neutral-800 dark:text-neutral-200 mb-8">Book your vehicle service with our expert mechanics</p>
 
                 {!loading && (
                     user ? (
@@ -55,7 +54,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                 <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
                     <h2 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Quality Service</h2>
-                    <p className="text-neutral-800 dark:text-neutral-200">Our certified mechanics provide top-notch service for all vehicle makes and models.</p>
+                    <p className="text-neutral-800 dark:text-neutral-200">MECHANIC provides top-notch service for all vehicle makes and models.</p>
                 </div>
                 <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
                     <h2 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Easy Scheduling</h2>
@@ -63,7 +62,7 @@ export default function Home() {
                 </div>
                 <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
                     <h2 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Transparent Pricing</h2>
-                    <p className="text-neutral-800 dark:text-neutral-200">Know exactly what you&apos;ll pay before you book - no surprises.</p>
+                    <p className="text-neutral-800 dark:text-neutral-200">Get an estimate of the cost before you book - no surprises.</p>
                 </div>
             </div>
         </div>
