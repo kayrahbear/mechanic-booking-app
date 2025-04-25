@@ -40,6 +40,18 @@ steps:
       gcloud secrets versions access latest --secret=firebase-web-config --project=$PROJECT_ID > frontend/.env.local
       echo "Firebase config fetched successfully"
 
+# Debug step to print environment variables
+- id: debug-env-vars
+  name: bash
+  entrypoint: bash
+  dir: frontend
+  args:
+    - -c
+    - |
+      echo "=== Environment variables in .env.local ==="
+      cat .env.local
+      echo "=========================================="
+
 - id: frontend-build
   name: gcr.io/cloud-builders/docker
   dir: frontend
