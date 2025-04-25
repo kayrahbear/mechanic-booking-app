@@ -110,11 +110,11 @@ export default function BookingForm({
     }
 
     return (
-        <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-bold mb-6">Book an Appointment</h2>
+        <div className="max-w-2xl mx-auto bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
+            <h2 className="text-2xl font-bold mb-6 text-neutral-900 dark:text-white">Book an Appointment</h2>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md">
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-error dark:text-red-300 rounded-md">
                     {error}
                 </div>
             )}
@@ -123,14 +123,14 @@ export default function BookingForm({
                 <div className="space-y-6">
                     {/* Service Selection */}
                     <div>
-                        <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="service" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                             Service*
                         </label>
                         <select
                             id="service"
                             value={selectedService}
                             onChange={(e) => setSelectedService(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                             required
                         >
                             <option value="">Select a service</option>
@@ -144,7 +144,7 @@ export default function BookingForm({
 
                     {/* Date Selection */}
                     <div>
-                        <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="date" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                             Date*
                         </label>
                         <input
@@ -153,18 +153,18 @@ export default function BookingForm({
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                             required
                         />
                     </div>
 
                     {/* Time Selection */}
                     <div>
-                        <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="time" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                             Time*
                         </label>
                         {isLoading ? (
-                            <div className="text-sm text-gray-500">Loading available slots...</div>
+                            <div className="text-sm text-neutral-500 dark:text-neutral-400">Loading available slots...</div>
                         ) : availableSlots.length > 0 ? (
                             <div className="grid grid-cols-3 gap-2">
                                 {availableSlots
@@ -175,8 +175,8 @@ export default function BookingForm({
                                             type="button"
                                             onClick={() => setSelectedTime(slot.time)}
                                             className={`py-2 px-4 border rounded-md text-center ${selectedTime === slot.time
-                                                ? 'bg-blue-100 border-blue-500 text-blue-700'
-                                                : 'bg-white border-gray-300 hover:bg-gray-50'
+                                                ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-primary-50'
+                                                : 'bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-600 text-neutral-800 dark:text-neutral-200'
                                                 }`}
                                         >
                                             {slot.time}
@@ -184,7 +184,7 @@ export default function BookingForm({
                                     ))}
                             </div>
                         ) : (
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-neutral-500 dark:text-neutral-400">
                                 No available slots for this date and service
                             </div>
                         )}
@@ -193,7 +193,7 @@ export default function BookingForm({
                     {/* Customer Details */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                 Your Name*
                             </label>
                             <input
@@ -201,13 +201,13 @@ export default function BookingForm({
                                 type="text"
                                 value={customerName}
                                 onChange={(e) => setCustomerName(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
+                                className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                 required
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                 Email*
                             </label>
                             <input
@@ -215,13 +215,13 @@ export default function BookingForm({
                                 type="email"
                                 value={customerEmail}
                                 onChange={(e) => setCustomerEmail(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
+                                className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                 required
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                 Phone Number (optional)
                             </label>
                             <input
@@ -229,13 +229,13 @@ export default function BookingForm({
                                 type="tel"
                                 value={customerPhone}
                                 onChange={(e) => setCustomerPhone(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
+                                className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="notes" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                             Notes (optional)
                         </label>
                         <textarea
@@ -243,14 +243,14 @@ export default function BookingForm({
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={3}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                         ></textarea>
                     </div>
 
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md disabled:bg-blue-400"
+                        className="w-full bg-primary hover:bg-primary-dark dark:bg-accent dark:hover:bg-accent-dark text-white py-2 px-4 rounded-md disabled:opacity-70 transition-colors"
                     >
                         {isSubmitting ? 'Submitting...' : 'Book Appointment'}
                     </button>

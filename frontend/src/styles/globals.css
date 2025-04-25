@@ -12,15 +12,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: theme('fontFamily.sans');
+}
+
+/* Dark mode will now be controlled by Tailwind's .dark class approach */
+.dark {
+  --background: #0f172a;
+  /* slate-900 - better than pure black */
+  --foreground: #f1f5f9;
+  /* slate-100 */
 }
