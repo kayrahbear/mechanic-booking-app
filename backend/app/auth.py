@@ -1,8 +1,24 @@
 from fastapi import Depends, HTTPException, status, Header
 from firebase_admin import auth
+from firebase_admin import credentials
+import firebase_admin
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError
 from typing import Optional
 from pydantic import BaseModel
+
+# Ensure Firebase Admin SDK is initialized exactly once.
+# This is required before calling auth.verify_id_token.
+# Using Application Default Credentials so Cloud Run service account works out-of-the-box.
+try:
+    firebase_admin.get_app()
+except ValueError:
+    try:
+        cred = credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
+    except Exception as e:
+        # If initialization fails, we log; downstream calls will raise clearer errors.
+        import logging
+        logging.error("Failed to initialize Firebase Admin SDK: %s", e)
 
 class User(BaseModel):
     """User information from Firebase Auth token"""
@@ -49,11 +65,14 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Optio
         return user
         
     except (InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication token: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        # The token is not a valid Firebase Auth token. This may happen when the
+        # request comes from another Cloud Run service using an IAM identity
+        # token. Treat this as an anonymous call so public endpoints can still
+        # succeed, but return nothing so endpoints that *require* auth will
+        # reject via get_admin_user or explicit checks.
+        import logging
+        logging.info("Non-Firebase identity token supplied; treating as anonymous: %s", e)
+        return None
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
