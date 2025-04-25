@@ -52,14 +52,13 @@ steps:
       cat .env.local
       echo "=========================================="
 
-- id: frontend-build
-  name: gcr.io/cloud-builders/docker
+- name: gcr.io/kaniko-project/executor:latest
   dir: frontend
-  args: [
-    'build','-t',
-    '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA',
-    '.'
-  ]
+  args:
+    - --destination=$LOCATION-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA
+    - --cache=true                 # layer cache stored in Artifact Registry
+    - --cache-ttl=24h              # keep layers for 24 h
+
 
 - id: frontend-push
   name: gcr.io/cloud-builders/docker
