@@ -224,7 +224,8 @@ steps:
 
 images:
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
-- '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
+# This image is pushed by the Kaniko step, so remove from here for verification
+#- '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA'
 
 timeout: 1800s   # 30 minutes
