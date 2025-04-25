@@ -18,7 +18,7 @@ interface AvailabilityPageProps {
     services: Service[];
     initialDate?: string;
     initialServiceId?: string;
-    availabilityData?: AvailabilityData;
+    availabilityData?: AvailabilityData | null;
 }
 
 export const getServerSideProps: GetServerSideProps<AvailabilityPageProps> = async (context) => {
@@ -26,7 +26,7 @@ export const getServerSideProps: GetServerSideProps<AvailabilityPageProps> = asy
         const { date, service_id } = context.query;
         const services = await fetchServices();
 
-        let availabilityData = undefined;
+        let availabilityData = null;
 
         // If both date and service_id are provided, fetch availability
         if (date && service_id) {
@@ -52,6 +52,7 @@ export const getServerSideProps: GetServerSideProps<AvailabilityPageProps> = asy
                 services: [],
                 initialDate: new Date().toISOString().split('T')[0],
                 initialServiceId: '',
+                availabilityData: null
             },
         };
     }

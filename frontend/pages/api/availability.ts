@@ -10,14 +10,14 @@ export default async function handler(
         return res.status(405).json({ detail: 'Method not allowed' });
     }
 
-    const { date, service_id } = req.query;
+    const { date } = req.query;
 
-    if (!date || !service_id) {
-        return res.status(400).json({ detail: 'Missing required parameters: date and service_id' });
+    if (!date) {
+        return res.status(400).json({ detail: 'Missing required parameter: date' });
     }
 
     try {
-        const data = await fetchAvailableSlots(date as string, service_id as string);
+        const data = await fetchAvailableSlots(date as string);
         return res.status(200).json(data);
     } catch (error: unknown) {
         console.error('Error fetching availability:', error);

@@ -30,15 +30,37 @@ export async function fetchServices() {
 }
 
 // Function to fetch available slots for a specific date and service
-export async function fetchAvailableSlots(date: string, serviceId: string) {
-    const url = `${apiBase}/availability?day=${date}&service_id=${serviceId}`;
+export async function fetchAvailableSlots(date: string, service_id?: string) {
+    // The backend expects a 'day' parameter
+    const url = `${apiBase}/availability?day=${date}${service_id ? `&service_id=${service_id}` : ''}`;
 
     const headers: Record<string, string> = {};
     // Add auth headers if needed (similar to your fetchServices function)
 
     const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`Failed to load availability – ${res.status}`);
-    return res.json();
+
+    // The backend returns a list of Slot objects, but the frontend expects a different format
+    const slots = await res.json();
+
+    // Transform the response to match the expected format
+    const slotsMap: Record<string, string> = {};
+
+    if (Array.isArray(slots)) {
+        slots.forEach(slot => {
+            // Extract time from the ISO string (e.g., "2023-04-25T08:00:00" -> "08:00")
+            const timeMatch = slot.start.match(/T(\d{2}:\d{2})/);
+            if (timeMatch && timeMatch[1]) {
+                const time = timeMatch[1];
+                slotsMap[time] = slot.is_free ? 'free' : 'booked';
+            }
+        });
+    }
+
+    return {
+        date,
+        slots: slotsMap
+    }
 }
 
 // Function to create a new booking
