@@ -1,6 +1,7 @@
 {
   "projects": {
-    "main": "auto-mech-booking-0418"
+    "main": "auto-mech-booking-0418",
+    "default": "auto-mech-booking-0418"
   },
   "targets": {},
   "etags": {}
