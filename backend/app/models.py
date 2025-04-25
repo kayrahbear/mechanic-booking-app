@@ -47,18 +47,22 @@ class BookingCreate(BaseModel):
     notes: Optional[str] = None
 
 class BookingStatus(str, Enum):
+    PENDING = "pending"
     CONFIRMED = "confirmed"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    DENIED = "denied"
     NO_SHOW = "no-show"
 
 class BookingOut(BookingCreate):
     id: str = Field(..., description="Firestore document ID")
     slot_end: datetime
-    status: str = BookingStatus.CONFIRMED.value  # Using the string value
+    status: str = BookingStatus.PENDING.value  # Change default to PENDING
     service_name: str = ""  # Added for denormalization
     service_price: float = 0.0  # Added for denormalization
     calendar_event_id: Optional[str] = None  # Google Calendar event ID
+    approved_by: Optional[str] = None  # Mechanic who approved/denied the booking
+    approval_timestamp: Optional[datetime] = None  # When the booking was approved/denied
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

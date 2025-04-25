@@ -2,6 +2,7 @@ import os, logging
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime
+from google.api_core.exceptions import GoogleAPIError
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
@@ -28,3 +29,16 @@ def create_event(booking) -> str:   # booking is BookingOut
     event = service.events().insert(calendarId=calendar_id, body=body).execute()
     logging.info("Created calendar event %s for booking %s", event["id"], booking.id)
     return event["id"]
+
+def delete_event(event_id: str) -> bool:
+    """Delete a calendar event by its ID"""
+    try:
+        service = get_calendar_service()
+        calendar_id = os.getenv("CALENDAR_ID", "primary")
+        
+        service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+        logging.info("Deleted calendar event %s", event_id)
+        return True
+    except Exception as e:
+        logging.error("Failed to delete calendar event %s: %s", event_id, str(e))
+        raise GoogleAPIError(f"Calendar deletion failed: {str(e)}")

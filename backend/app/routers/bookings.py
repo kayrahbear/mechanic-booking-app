@@ -8,12 +8,13 @@ from typing import List, Optional
 import logging
 import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from pydantic import BaseModel
 
 from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole
 from ..firestore import get_client
-from ..auth import get_current_user
+from ..auth import get_current_user, get_admin_user, get_mechanic_user
 from ..notifications import send_booking_notification
-from ..google_calendar import create_event
+from ..google_calendar import create_event, delete_event
 from google.api_core.exceptions import GoogleAPIError
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
@@ -45,6 +46,11 @@ class ServiceNotFoundError(BookingError):
 class DayNotPublishedError(BookingError):
     """Raised when availability for a day has not been published."""
     pass
+
+class BookingApproval(BaseModel):
+    """Model for booking approval requests"""
+    approved: bool
+    notes: Optional[str] = None
 
 @router.post("", response_model=BookingOut, status_code=201)
 async def create_booking(
@@ -302,3 +308,128 @@ async def update_booking_status(
     # Fetch and return the updated booking
     updated_booking = booking_ref.get().to_dict()
     return BookingOut(id=booking_id, **updated_booking)
+
+@router.post("/{booking_id}/approval", response_model=BookingOut)
+async def approve_or_deny_booking(
+    booking_id: str,
+    approval: BookingApproval,
+    background_tasks: BackgroundTasks,
+    current_user = Depends(get_mechanic_user)
+):
+    """
+    Approve or deny a booking. Only mechanics and admins can perform this action.
+    If denied, the appointment will be removed from Google Calendar.
+    """
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    booking_ref = db.collection("bookings").document(booking_id)
+    
+    # Update the status using a transaction to ensure consistency
+    @firestore.transactional
+    def update_approval_txn(transaction: firestore.Transaction):
+        # Read the booking document to verify it still exists
+        doc = booking_ref.get(transaction=transaction)
+        if not doc.exists:
+            return None
+        
+        booking_data = doc.to_dict()
+        
+        # Set the new status based on approval decision
+        new_status = BookingStatus.CONFIRMED.value if approval.approved else BookingStatus.DENIED.value
+        
+        # Update fields
+        update_data = {
+            "status": new_status,
+            "approved_by": current_user.uid,
+            "approval_timestamp": firestore.SERVER_TIMESTAMP,
+            "updated_at": firestore.SERVER_TIMESTAMP
+        }
+        
+        # Add notes if provided
+        if approval.notes:
+            update_data["approval_notes"] = approval.notes
+        
+        transaction.update(booking_ref, update_data)
+        
+        # If we're denying the booking, we need to mark the slot as free again
+        if not approval.approved:
+            # Get the slot from availability
+            slot_date = booking_data["slot_start"].date().isoformat()
+            slot_time = booking_data["slot_start"].strftime("%H:%M")
+            
+            # Read the availability document
+            avail_ref = db.collection("availability").document(slot_date)
+            avail_doc = avail_ref.get(transaction=transaction)
+            
+            if avail_doc.exists:
+                avail_data = avail_doc.to_dict()
+                slots = avail_data.get("slots", {})
+                
+                # Only update if the slot is currently booked
+                if slots.get(slot_time) == SlotStatus.BOOKED.value:
+                    slots[slot_time] = SlotStatus.FREE.value
+                    transaction.update(avail_ref, {
+                        "slots": slots,
+                        "updated_at": firestore.SERVER_TIMESTAMP
+                    })
+        
+        # Return the booking data and approval status
+        return {"booking_data": booking_data, "approved": approval.approved}
+    
+    # Execute the transaction
+    result = update_approval_txn(db.transaction())
+    
+    if not result:
+        raise HTTPException(404, "Booking not found")
+    
+    # Get the updated booking
+    updated_booking = booking_ref.get().to_dict()
+    booking_out = BookingOut(id=booking_id, **updated_booking)
+    
+    # If the booking was denied and has a calendar event, remove it
+    if not result["approved"] and updated_booking.get("calendar_event_id"):
+        try:
+            # Delete the calendar event in the background
+            background_tasks.add_task(
+                delete_event, 
+                updated_booking["calendar_event_id"]
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete calendar event: {str(e)}")
+    
+    # Send notification about approval/denial in the background
+    background_tasks.add_task(
+        send_booking_notification, 
+        booking_out, 
+        "approval" if result["approved"] else "denial"
+    )
+    
+    return booking_out
+
+@router.get("/mechanic/pending", response_model=List[BookingOut])
+async def get_pending_bookings(
+    current_user = Depends(get_mechanic_user)
+):
+    """Get all pending bookings that need mechanic approval"""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    # Get all pending bookings
+    query = db.collection("bookings").where("status", "==", BookingStatus.PENDING.value)
+    
+    # If the user is a mechanic (not admin), might filter by assigned mechanic in the future
+    
+    # Order by date (most recent first)
+    query = query.order_by("slot_start")
+    
+    # Execute query and format results
+    bookings = []
+    for doc in query.stream():
+        booking_data = doc.to_dict()
+        booking_data["id"] = doc.id
+        bookings.append(BookingOut(**booking_data))
+    
+    return bookings

@@ -1,104 +1,70 @@
-import { auth } from './firebase';
+import axios from 'axios';
+import { Booking, MechanicSchedule } from './types';
 
-const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+const api = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '/api'
+});
 
-export async function fetchServices() {
-    const url = `${apiBase}/services`;
-
-    // Build headers – add an identity token when running inside Cloud Run
-    const headers: Record<string, string> = {};
-
-    if (typeof window === "undefined") {
-        try {
-            const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(apiBase)}&format=full`;
-            const tokenResp = await fetch(metadataURL, {
-                headers: { "Metadata-Flavor": "Google" }
-            });
-            console.log("identity token fetch", tokenResp.status, metadataURL);
-
-            if (tokenResp.ok) {
-                const token = await tokenResp.text();
-                headers["Authorization"] = `Bearer ${token}`;
-            }
-        } catch (err) {
-            console.error("Failed to obtain identity token for backend call", err);
-        }
+// Auth utilities
+export const setAuthToken = (token: string | null) => {
+    if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+        delete api.defaults.headers.common['Authorization'];
     }
+};
 
-    console.log("fetching services from", url);
-    const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error(`Failed to load services – ${res.status}`);
-    return res.json();
-}
+// Basic API endpoints
+export const getServices = async () => {
+    const response = await api.get('/services');
+    return response.data;
+};
 
-// Function to fetch available slots for a specific date and service
-export async function fetchAvailableSlots(date: string, service_id?: string) {
-    // Use the Next.js API route instead of calling the backend directly
-    const url = `/api/availability?day=${date}${service_id ? `&service_id=${service_id}` : ''}`;
+export const getAvailability = async (date: string) => {
+    const response = await api.get(`/availability?date=${date}`);
+    return response.data;
+};
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to load availability – ${res.status}`);
+export const createBooking = async (bookingData: Omit<Booking, 'id' | 'status'>) => {
+    const response = await api.post('/bookings', bookingData);
+    return response.data;
+};
 
-    // The backend returns a list of Slot objects, but the frontend expects a different format
-    const slots = await res.json();
+export const getBookings = async (token: string) => {
+    setAuthToken(token);
+    const response = await api.get('/bookings');
+    return response.data;
+};
 
-    // Transform the response to match the expected format
-    const slotsMap: Record<string, string> = {};
+// Mechanic-specific endpoints
+export const getPendingBookings = async (token: string): Promise<Booking[]> => {
+    setAuthToken(token);
+    const response = await api.get('/bookings/mechanic/pending');
+    return response.data;
+};
 
-    if (Array.isArray(slots)) {
-        slots.forEach(slot => {
-            // Extract time from the ISO string (e.g., "2023-04-25T08:00:00" -> "08:00")
-            const timeMatch = slot.start.match(/T(\d{2}:\d{2})/);
-            if (timeMatch && timeMatch[1]) {
-                const time = timeMatch[1];
-                slotsMap[time] = slot.is_free ? 'free' : 'booked';
-            }
-        });
-    }
-
-    return {
-        date,
-        slots: slotsMap
-    }
-}
-
-// Function to create a new booking
-export async function createBooking(bookingData: {
-    service_id: string;
-    slot_start: string;
-    customer_name: string;
-    customer_email: string;
-    customer_phone?: string;
-    notes?: string;
-}) {
-    // Use the Next.js API route instead of calling the backend directly
-    const url = `/api/bookings`;
-
-    // Build headers
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-    };
-
-    // If running in the browser and the user is logged in, include a Firebase ID token
-    if (typeof window !== 'undefined' && auth.currentUser) {
-        try {
-            const idToken = await auth.currentUser.getIdToken();
-            headers['Authorization'] = `Bearer ${idToken}`;
-        } catch (err) {
-            console.error('Failed to obtain Firebase ID token', err);
-        }
-    }
-
-    const res = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(bookingData)
+export const approveBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
+    setAuthToken(token);
+    const response = await api.post(`/bookings/${bookingId}/approval`, {
+        approved: true,
+        notes
     });
+    return response.data;
+};
 
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to create booking – ${res.status}`);
-    }
+export const denyBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
+    setAuthToken(token);
+    const response = await api.post(`/bookings/${bookingId}/approval`, {
+        approved: false,
+        notes
+    });
+    return response.data;
+};
 
-    return res.json();
-}
+export const updateMechanicAvailability = async (token: string, schedule: MechanicSchedule): Promise<MechanicSchedule> => {
+    setAuthToken(token);
+    const response = await api.post('/mechanic/availability', { schedule });
+    return response.data;
+};
+
+export default api;
