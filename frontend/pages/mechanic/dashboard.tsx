@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth-context';
 import { Booking, MechanicSchedule } from '../../lib/types';
 import MechanicAvailabilityManager from '../../components/MechanicAvailabilityManager';
 import PendingAppointmentsList from '../../components/PendingAppointmentsList';
-import { getPendingBookings, approveBooking, denyBooking } from '../../lib/api';
+import { getPendingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
 
 export default function MechanicDashboard() {
     const { user, userRole } = useAuth();
@@ -49,13 +49,12 @@ export default function MechanicDashboard() {
         setError(null);
         try {
             if (user) {
-                // Using mock implementation until backend is ready
-                // const token = await user.getIdToken();
-                // await updateMechanicAvailability(token, schedule);
-                console.log('Saving schedule:', schedule);
+                const token = await user.getIdToken();
+                // Use the actual API endpoint now
+                await updateMechanicAvailability(token, schedule);
 
-                // Mock successful save
                 setMechanicSchedule(schedule);
+                // Update success message
                 alert('Schedule saved successfully!');
             }
         } catch (err) {

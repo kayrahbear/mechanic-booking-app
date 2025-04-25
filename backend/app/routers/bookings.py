@@ -122,7 +122,7 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     # Create booking with additional fields
     booking_data = payload.model_dump()
     booking_data["slot_end"] = slot_end
-    booking_data["status"] = BookingStatus.CONFIRMED.value
+    booking_data["status"] = BookingStatus.PENDING.value
     booking_data["created_at"] = firestore.SERVER_TIMESTAMP
     booking_data["updated_at"] = firestore.SERVER_TIMESTAMP
     

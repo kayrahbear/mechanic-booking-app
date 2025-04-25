@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if a user is an admin
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+    
+    // Helper function to check if a user is a mechanic
+    function isMechanic() {
+      return isAuthenticated() && (request.auth.token.mechanic == true || isAdmin());
+    }
+    
+    // Helper function to check if a user is the owner of a document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Public read-only collections
+    match /services/{service} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Bookings collection rules
+    match /bookings/{booking} {
+      // Customers can only read their own bookings
+      // Mechanics can read any booking (for appointment approval)
+      // Admins can read and write all bookings
+      allow read: if isAuthenticated() && 
+                   (resource.data.customer_email == request.auth.token.email || 
+                    isMechanic() || 
+                    isAdmin());
+      
+      // Customers can create bookings with their own email
+      // Only admins and mechanics can update bookings
+      allow create: if isAuthenticated() && 
+                      (request.resource.data.customer_email == request.auth.token.email || 
+                       isAdmin());
+      
+      allow update: if isMechanic() || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Availability collection rules - can be read by anyone, but only written by admins
+    match /availability/{day} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Mechanics collection rules
+    match /mechanics/{mechanic} {
+      // Mechanics can only read and update their own document
+      // Admins can read and write all mechanics
+      allow read: if isOwner(mechanic) || isAdmin();
+      allow write: if isOwner(mechanic) || isAdmin();
+      
+      // Special case for availability sub-field updates
+      allow update: if isMechanic() && 
+                     request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['schedule', 'updated_at']);
+    }
+    
+    // Users collection for profile data
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+  }
+} 
