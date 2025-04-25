@@ -19,3 +19,6 @@ __pycache__/
 
 # ── Google Calendar ─────────────────────────────
 backend/.dev_secrets/calendar-sa-key.json
+
+.env.local
+.env
