@@ -52,12 +52,12 @@ export default function Register() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-8">
                 <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    <h2 className="mt-6 text-center text-3xl font-extrabold text-neutral-900 dark:text-white">
                         Create your account
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-700">
+                    <p className="mt-2 text-center text-sm text-neutral-700 dark:text-neutral-300">
                         Or{' '}
-                        <Link href="/login" className="font-medium text-blue-700 hover:text-blue-800">
+                        <Link href="/login" className="font-medium text-primary dark:text-accent hover:text-primary-dark dark:hover:text-accent-dark">
                             sign in to existing account
                         </Link>
                     </p>
@@ -74,7 +74,7 @@ export default function Register() {
                                 type="email"
                                 autoComplete="email"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
                                 placeholder="Email address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -90,7 +90,7 @@ export default function Register() {
                                 type="password"
                                 autoComplete="new-password"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -106,7 +106,7 @@ export default function Register() {
                                 type="password"
                                 autoComplete="new-password"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
                                 placeholder="Confirm Password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
