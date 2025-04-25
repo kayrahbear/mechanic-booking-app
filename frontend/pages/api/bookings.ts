@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createBooking } from '../../lib/api';
 
 export default async function handler(
     req: NextApiRequest,
@@ -20,11 +19,36 @@ export default async function handler(
             return res.status(400).json({ detail: 'Missing required fields' });
         }
 
+        // Get the backend API URL from environment variables
+        const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+
         // Forward the request to the backend API
-        const result = await createBooking(bookingData);
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // Add Authentication header if there's a current user
+        // Note: This won't work in API routes since they run on the server
+        // We'll need a different approach for authentication
+
+        const backendUrl = `${apiBase}/bookings`;
+        const response = await fetch(backendUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(bookingData)
+        });
+
+        // Get the response data
+        let data;
+        try {
+            data = await response.json();
+        } catch (error) {
+            console.error('Error parsing JSON response:', error);
+            data = { detail: 'No response data' };
+        }
 
         // Return the result
-        return res.status(201).json(result);
+        return res.status(response.status).json(data);
     } catch (error: unknown) {
         console.error('Error creating booking:', error);
         return res.status(500).json({

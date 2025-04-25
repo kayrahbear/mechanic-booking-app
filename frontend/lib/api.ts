@@ -31,13 +31,10 @@ export async function fetchServices() {
 
 // Function to fetch available slots for a specific date and service
 export async function fetchAvailableSlots(date: string, service_id?: string) {
-    // The backend expects a 'day' parameter
-    const url = `${apiBase}/availability?day=${date}${service_id ? `&service_id=${service_id}` : ''}`;
+    // Use the Next.js API route instead of calling the backend directly
+    const url = `/api/availability?day=${date}${service_id ? `&service_id=${service_id}` : ''}`;
 
-    const headers: Record<string, string> = {};
-    // Add auth headers if needed (similar to your fetchServices function)
-
-    const res = await fetch(url, { headers });
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load availability – ${res.status}`);
 
     // The backend returns a list of Slot objects, but the frontend expects a different format
@@ -72,24 +69,14 @@ export async function createBooking(bookingData: {
     customer_phone?: string;
     notes?: string;
 }) {
-    const url = `${apiBase}/bookings`;
-
-    // Get auth token if needed
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-    };
-
-    // If running in browser, we'll need to add the Firebase auth token
-    if (typeof window !== "undefined") {
-        const token = await getFirebaseAuthToken(); // You'll need to implement this
-        if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-        }
-    }
+    // Use the Next.js API route instead of calling the backend directly
+    const url = `/api/bookings`;
 
     const res = await fetch(url, {
         method: 'POST',
-        headers,
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(bookingData)
     });
 
@@ -99,23 +86,4 @@ export async function createBooking(bookingData: {
     }
 
     return res.json();
-}
-
-// Helper to get Firebase auth token - implement this based on your authentication setup
-async function getFirebaseAuthToken() {
-    // If you're using Firebase auth, get the current user's ID token
-    try {
-        // Import firebase directly to ensure it's initialized
-        const { auth } = await import('./firebase');
-
-        // Check if we have a current user
-        if (auth && auth.currentUser) {
-            return await auth.currentUser.getIdToken();
-        } else {
-            console.log("No authenticated user found");
-        }
-    } catch (error) {
-        console.error("Error getting auth token:", error);
-    }
-    return null;
 }
