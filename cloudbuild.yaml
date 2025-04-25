@@ -56,16 +56,9 @@ steps:
   dir: frontend
   args:
     - --destination=${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA
+    - --context=/workspace/frontend
     - --cache=true                 # layer cache stored in Artifact Registry
     - --cache-ttl=24h              # keep layers for 24 h
-
-
-- id: frontend-push
-  name: gcr.io/cloud-builders/docker
-  args: [
-    'push',
-    '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
-  ]
 
 ###############################################################################
 # 3  Build & push worker container
