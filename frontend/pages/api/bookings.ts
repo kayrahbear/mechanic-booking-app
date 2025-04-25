@@ -22,15 +22,29 @@ export default async function handler(
         // Get the backend API URL from environment variables
         const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
-        // Forward the request to the backend API
+        // Build headers for forwarding request
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
 
-        // Add Authentication header if there's a current user
-        // Note: This won't work in API routes since they run on the server
-        // We'll need a different approach for authentication
+        // When running on the server (Cloud Run), obtain an identity token for backend service
+        if (typeof window === 'undefined') {
+            try {
+                const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(apiBase)}&format=full`;
+                const tokenResp = await fetch(metadataURL, {
+                    headers: { 'Metadata-Flavor': 'Google' }
+                });
 
+                if (tokenResp.ok) {
+                    const token = await tokenResp.text();
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+            } catch (err) {
+                console.error('Failed to obtain identity token for backend call', err);
+            }
+        }
+
+        // Forward the request to the backend API
         const backendUrl = `${apiBase}/bookings`;
         const response = await fetch(backendUrl, {
             method: 'POST',

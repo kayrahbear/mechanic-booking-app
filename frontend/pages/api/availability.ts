@@ -19,12 +19,31 @@ export default async function handler(
         // Build the backend URL
         const backendUrl = `${apiBase}/availability?day=${day}${service_id ? `&service_id=${service_id}` : ''}`;
 
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // When running inside Cloud Run, obtain an identity token for the backend service
+        if (typeof window === 'undefined') {
+            try {
+                const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(apiBase)}&format=full`;
+                const tokenResp = await fetch(metadataURL, {
+                    headers: { 'Metadata-Flavor': 'Google' }
+                });
+
+                if (tokenResp.ok) {
+                    const token = await tokenResp.text();
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+            } catch (err) {
+                console.error('Failed to obtain identity token for backend call', err);
+            }
+        }
+
         // Forward the request to the backend API
         const response = await fetch(backendUrl, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers,
         });
 
         // Get the response data
