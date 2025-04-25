@@ -10,7 +10,7 @@ interface Service {
     price: number;
 }
 
-// Use NEXT_PUBLIC_API_BASE from the environment variables instead of BACKEND_API_BASE
+// Use NEXT_PUBLIC_API_BASE from the environment variables instead of NEXT_PUBLIC_API_BASE
 const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {

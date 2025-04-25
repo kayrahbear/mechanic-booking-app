@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
-const apiUrl = process.env.BACKEND_API_BASE || 'http://localhost:8000';
+const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
 export default async function handler(
     req: NextApiRequest,
