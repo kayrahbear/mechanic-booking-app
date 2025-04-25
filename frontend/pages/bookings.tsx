@@ -58,7 +58,7 @@ const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
     return (
         <ProtectedRoute>
             <div className="container mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold mb-6">Your Bookings</h1>
+                <h1 className="text-3xl font-bold mb-6 text-gray-900">Your Bookings</h1>
 
                 {showSuccess && (
                     <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-md border border-green-200">
@@ -69,7 +69,7 @@ const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
 
                 {bookings.length === 0 ? (
                     <div className="bg-gray-50 p-6 rounded-lg text-center">
-                        <p className="text-gray-600">You don&apos;t have any bookings yet.</p>
+                        <p className="text-gray-800">You don&apos;t have any bookings yet.</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -85,7 +85,7 @@ const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
                             return (
                                 <div key={booking.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                                     <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-lg">{booking.service_name}</h3>
+                                        <h3 className="font-bold text-lg text-gray-900">{booking.service_name}</h3>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                                             booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                                                 booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
@@ -95,20 +95,20 @@ const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
                                         </span>
                                     </div>
 
-                                    <p className="text-gray-700 mb-4">
+                                    <p className="text-gray-800 mb-4">
                                         {formattedDate} • {startTime} - {endTime}
                                     </p>
 
                                     {booking.notes && (
                                         <div className="mb-4">
-                                            <p className="text-sm text-gray-500">Notes:</p>
-                                            <p className="text-gray-700">{booking.notes}</p>
+                                            <p className="text-sm text-gray-700">Notes:</p>
+                                            <p className="text-gray-800">{booking.notes}</p>
                                         </div>
                                     )}
 
                                     {booking.calendar_event_id && (
                                         <div className="text-sm">
-                                            <span className="text-blue-600">✓</span> Added to calendar
+                                            <span className="text-blue-700">✓</span> Added to calendar
                                         </div>
                                     )}
                                 </div>

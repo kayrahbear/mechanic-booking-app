@@ -44,7 +44,7 @@ export default function BookPage({ services }: BookPageProps) {
     return (
         <ProtectedRoute>
             <div className="container mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold mb-6">Book a Service</h1>
+                <h1 className="text-3xl font-bold mb-6 text-gray-900">Book a Service</h1>
 
                 <BookingForm
                     services={services}

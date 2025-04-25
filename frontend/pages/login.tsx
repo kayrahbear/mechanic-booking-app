@@ -34,9 +34,9 @@ export default function Login() {
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                         Sign in to your account
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
+                    <p className="mt-2 text-center text-sm text-gray-700">
                         Or{' '}
-                        <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                        <Link href="/register" className="font-medium text-blue-700 hover:text-blue-800">
                             create a new account
                         </Link>
                     </p>
@@ -79,7 +79,7 @@ export default function Login() {
                     </div>
 
                     {error && (
-                        <div className="text-red-500 text-sm text-center">{error}</div>
+                        <div className="text-red-600 text-sm text-center">{error}</div>
                     )}
 
                     <div className="flex items-center justify-between">
@@ -96,7 +96,7 @@ export default function Login() {
                         </div>
 
                         <div className="text-sm">
-                            <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                            <a href="#" className="font-medium text-blue-700 hover:text-blue-800">
                                 Forgot your password?
                             </a>
                         </div>

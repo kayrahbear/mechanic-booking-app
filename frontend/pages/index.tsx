@@ -8,13 +8,13 @@ export default function Home() {
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-16">
-                <h1 className="text-4xl font-bold mb-4">Mechanic Scheduling App</h1>
-                <p className="text-xl text-gray-600 mb-8">Book your vehicle service with our expert mechanics</p>
+                <h1 className="text-4xl font-bold mb-4 text-gray-900">Mechanic Scheduling App</h1>
+                <p className="text-xl text-gray-800 mb-8">Book your vehicle service with our expert mechanics</p>
 
                 {!loading && (
                     user ? (
                         <div className="space-y-4">
-                            <p className="text-green-600">Welcome back, {user.email}!</p>
+                            <p className="text-green-700">Welcome back, {user.email}!</p>
                             <div className="flex justify-center space-x-4">
                                 <Link
                                     href="/services"
@@ -24,7 +24,7 @@ export default function Home() {
                                 </Link>
                                 <Link
                                     href="/bookings"
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-800 bg-white hover:bg-gray-50"
                                 >
                                     View My Bookings
                                 </Link>
@@ -32,7 +32,7 @@ export default function Home() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <p className="text-gray-600 mb-4">Sign in to book services and manage your appointments</p>
+                            <p className="text-gray-800 mb-4">Sign in to book services and manage your appointments</p>
                             <div className="flex justify-center space-x-4">
                                 <Link
                                     href="/login"
@@ -42,7 +42,7 @@ export default function Home() {
                                 </Link>
                                 <Link
                                     href="/register"
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-800 bg-white hover:bg-gray-50"
                                 >
                                     Create Account
                                 </Link>
@@ -54,16 +54,16 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-xl font-bold mb-4">Quality Service</h2>
-                    <p className="text-gray-600">Our certified mechanics provide top-notch service for all vehicle makes and models.</p>
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">Quality Service</h2>
+                    <p className="text-gray-800">Our certified mechanics provide top-notch service for all vehicle makes and models.</p>
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-xl font-bold mb-4">Easy Scheduling</h2>
-                    <p className="text-gray-600">Book appointments online in seconds with real-time availability.</p>
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">Easy Scheduling</h2>
+                    <p className="text-gray-800">Book appointments online in seconds with real-time availability.</p>
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-xl font-bold mb-4">Transparent Pricing</h2>
-                    <p className="text-gray-600">Know exactly what you&apos;ll pay before you book - no surprises.</p>
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">Transparent Pricing</h2>
+                    <p className="text-gray-800">Know exactly what you&apos;ll pay before you book - no surprises.</p>
                 </div>
             </div>
         </div>

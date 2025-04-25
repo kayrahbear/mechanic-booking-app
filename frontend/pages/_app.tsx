@@ -2,6 +2,7 @@ import type { AppProps } from 'next/app';
 import { AuthProvider } from '../lib/auth-context';
 import Nav from '../lib/nav';
 import '../src/styles/globals.css';
+import '../lib/firebase';
 
 function MyApp({ Component, pageProps }: AppProps) {
     return (

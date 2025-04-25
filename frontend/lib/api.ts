@@ -104,11 +104,15 @@ export async function createBooking(bookingData: {
 // Helper to get Firebase auth token - implement this based on your authentication setup
 async function getFirebaseAuthToken() {
     // If you're using Firebase auth, get the current user's ID token
-    // Example (adjust based on your auth implementation):
     try {
+        // Import firebase directly to ensure it's initialized
         const { auth } = await import('./firebase');
-        if (auth.currentUser) {
+
+        // Check if we have a current user
+        if (auth && auth.currentUser) {
             return await auth.currentUser.getIdToken();
+        } else {
+            console.log("No authenticated user found");
         }
     } catch (error) {
         console.error("Error getting auth token:", error);

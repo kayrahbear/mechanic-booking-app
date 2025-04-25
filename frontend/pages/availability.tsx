@@ -102,18 +102,18 @@ const AvailabilityPage = ({
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-6">Check Availability</h1>
+            <h1 className="text-3xl font-bold mb-6 text-gray-900">Check Availability</h1>
 
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             Service
                         </label>
                         <select
                             value={selectedService}
                             onChange={(e) => setSelectedService(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 rounded-md text-gray-900"
                         >
                             <option value="">Select a service</option>
                             {services.map((service) => (
@@ -125,7 +125,7 @@ const AvailabilityPage = ({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             Date
                         </label>
                         <input
@@ -133,7 +133,7 @@ const AvailabilityPage = ({
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 border border-gray-300 rounded-md text-gray-900"
                         />
                     </div>
 
@@ -151,13 +151,13 @@ const AvailabilityPage = ({
 
             {availabilityData && (
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h2 className="text-2xl font-bold mb-4">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-900">
                         Available Slots for {selectedServiceName} on {selectedDate}
                     </h2>
 
                     {Object.entries(groupedSlots).map(([period, slots]) => slots.length > 0 && (
                         <div key={period} className="mb-6">
-                            <h3 className="text-lg font-medium mb-3 capitalize">{period}</h3>
+                            <h3 className="text-lg font-medium mb-3 capitalize text-gray-900">{period}</h3>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                                 {slots.map((slot: { time: string; status: string }, index) => (
                                     <div key={index} className="text-center">
@@ -169,7 +169,7 @@ const AvailabilityPage = ({
                                                 {slot.time}
                                             </Link>
                                         ) : (
-                                            <div className="py-2 px-3 bg-gray-100 border border-gray-300 text-gray-500 rounded-md">
+                                            <div className="py-2 px-3 bg-gray-100 border border-gray-300 text-gray-600 rounded-md">
                                                 {slot.time}
                                             </div>
                                         )}
@@ -180,7 +180,7 @@ const AvailabilityPage = ({
                     ))}
 
                     {Object.values(groupedSlots).every(slots => slots.length === 0) && (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-700">
                             No available slots for this date and service.
                         </div>
                     )}
