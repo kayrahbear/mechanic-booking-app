@@ -20,7 +20,7 @@ export default async function handler(
         }
 
         // Get the backend API URL from environment variables
-        const apiBase = process.env.BACKEND_BASE_URL || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
         // Build headers for forwarding request
         const headers: Record<string, string> = {
@@ -46,6 +46,7 @@ export default async function handler(
 
         // Forward the request to the backend API
         const backendUrl = `${apiBase}/bookings`;
+        console.log(`[API Route /api/bookings] Calling backend URL: ${backendUrl}`);
         const response = await fetch(backendUrl, {
             method: 'POST',
             headers,
