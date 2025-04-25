@@ -20,8 +20,22 @@ export const getServices = async () => {
     return response.data;
 };
 
+// Legacy function for backward compatibility
+export const fetchServices = async () => {
+    return getServices();
+};
+
 export const getAvailability = async (date: string) => {
     const response = await api.get(`/availability?date=${date}`);
+    return response.data;
+};
+
+// Legacy function for backward compatibility
+export const fetchAvailableSlots = async (date: string, service_id?: string) => {
+    const url = service_id
+        ? `/availability?date=${date}&service_id=${service_id}`
+        : `/availability?date=${date}`;
+    const response = await api.get(url);
     return response.data;
 };
 
