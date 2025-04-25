@@ -4,7 +4,7 @@ import { useAuth } from './auth-context';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function Nav() {
-    const { user, logout, loading } = useAuth();
+    const { user, logout, loading, userRole } = useAuth();
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -39,6 +39,11 @@ export default function Nav() {
                                     My Bookings
                                 </Link>
                             )}
+                            {(userRole === 'mechanic' || userRole === 'admin') && (
+                                <Link href="/mechanic/dashboard" className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${router.pathname.startsWith('/mechanic') ? 'border-primary dark:border-accent text-neutral-900 dark:text-white' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-200'}`}>
+                                    Mechanic Dashboard
+                                </Link>
+                            )}
                         </div>
                     </div>
                     <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -46,7 +51,14 @@ export default function Nav() {
                         {!loading && (
                             user ? (
                                 <div className="flex items-center space-x-4">
-                                    <span className="text-sm text-neutral-700 dark:text-neutral-300">{user.email}</span>
+                                    <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                                        {user.email}
+                                        {userRole && (
+                                            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                                {userRole}
+                                            </span>
+                                        )}
+                                    </span>
                                     <button
                                         onClick={handleLogout}
                                         className="bg-white dark:bg-neutral-700 px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 rounded-md text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-600"

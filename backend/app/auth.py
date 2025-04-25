@@ -27,6 +27,7 @@ class User(BaseModel):
     name: Optional[str] = None
     role: str = "customer"
     is_admin: bool = False
+    is_mechanic: bool = False
 
 async def get_current_user(authorization: Optional[str] = Header(None)) -> Optional[User]:
     """
@@ -55,12 +56,15 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Optio
             uid=decoded_token["uid"],
             email=decoded_token.get("email", ""),
             name=decoded_token.get("name", ""),
-            is_admin=decoded_token.get("admin", False)
+            is_admin=decoded_token.get("admin", False),
+            is_mechanic=decoded_token.get("mechanic", False)
         )
         
         # Set the role based on custom claims
         if user.is_admin:
             user.role = "admin"
+        elif user.is_mechanic:
+            user.role = "mechanic"
         
         return user
         
@@ -95,6 +99,26 @@ async def get_admin_user(current_user: User = Depends(get_current_user)) -> User
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized - admin role required",
+        )
+    
+    return current_user 
+
+async def get_mechanic_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Check if the current user is a mechanic or admin, returning the user if so.
+    Raises HTTPException if not authenticated or not a mechanic/admin.
+    """
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not (current_user.is_mechanic or current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized - mechanic role required",
         )
     
     return current_user 
