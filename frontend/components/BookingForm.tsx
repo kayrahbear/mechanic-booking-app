@@ -87,8 +87,8 @@ export default function BookingForm({
             setIsSubmitting(true);
             setError('');
 
-            // Format the date and time for the API
-            const bookingDateTime = `${selectedDate}T${selectedTime}:00`;
+            // Format the date and time for the API - use proper ISO format with Z (UTC)
+            const startDate = new Date(`${selectedDate}T${selectedTime}:00`);
 
             // Find selected service details
             const service = services.find(s => s.id === selectedService);
@@ -97,16 +97,18 @@ export default function BookingForm({
             }
 
             // Calculate end time based on service duration
-            const startDate = new Date(bookingDateTime);
             const endDate = new Date(startDate.getTime() + service.minutes * 60000);
+
+            // Format both as ISO strings with Z suffix to ensure timezone consistency
+            const slot_start = startDate.toISOString();
             const slot_end = endDate.toISOString();
 
             await createBooking({
                 service_id: selectedService,
                 service_name: service.name,
                 service_price: service.price,
-                slot_start: bookingDateTime,
-                slot_end: slot_end,
+                slot_start,
+                slot_end,
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_phone: customerPhone || undefined,
