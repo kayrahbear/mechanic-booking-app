@@ -117,7 +117,7 @@ export default function MechanicDashboard() {
                     </div>
                 ) : (
                     <>
-                        <div className="bg-white shadow rounded-lg p-6 mb-6">
+                        <div className="bg-white shadow rounded-lg p-6 mb-6 dark:bg-neutral-800">
                             <h2 className="text-xl font-semibold mb-4">Welcome, {user?.displayName || user?.email}</h2>
                             <p className="text-gray-600">Role: {userRole}</p>
                             {error && <p className="text-red-600 mt-2">{error}</p>}
