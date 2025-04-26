@@ -72,9 +72,11 @@ export const fetchAvailableSlots = async (date: string, service_id?: string) => 
     if (Array.isArray(data)) {
         const slots: Record<string, string> = {};
         data.forEach((slot: BackendSlot) => {
-            const start = new Date(slot.start);
-            if (!isNaN(start.getTime())) {
-                const timeKey = start.toISOString().split('T')[1].substring(0, 5); // HH:MM
+            // Extract the HH:MM part of the timestamp **without** converting to UTC. This prevents
+            // accidental timezone shifts that would mis-align the slot time between frontend and
+            // backend (e.g. 08:00 → 13:00).
+            if (typeof slot.start === 'string' && slot.start.includes('T')) {
+                const timeKey = slot.start.split('T')[1].substring(0, 5); // "HH:MM"
                 slots[timeKey] = slot.is_free ? 'free' : 'booked';
             }
         });

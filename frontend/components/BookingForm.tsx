@@ -87,7 +87,9 @@ export default function BookingForm({
             setIsSubmitting(true);
             setError('');
 
-            // Format the date and time for the API - use proper ISO format with Z (UTC)
+            // Build a Date object for calculations, but we will send **local naive** ISO strings
+            // (without the trailing "Z") to avoid unintentional UTC conversion that breaks
+            // the backend's HH:MM key matching.
             const startDate = new Date(`${selectedDate}T${selectedTime}:00`);
 
             // Find selected service details
@@ -99,9 +101,15 @@ export default function BookingForm({
             // Calculate end time based on service duration
             const endDate = new Date(startDate.getTime() + service.minutes * 60000);
 
-            // Format both as ISO strings with Z suffix to ensure timezone consistency
-            const slot_start = startDate.toISOString();
-            const slot_end = endDate.toISOString();
+            // Helper to format a Date as YYYY-MM-DDTHH:MM:SS (no timezone info)
+            const toLocalIso = (d: Date) => {
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+                    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            };
+
+            const slot_start = toLocalIso(startDate);
+            const slot_end = toLocalIso(endDate);
 
             await createBooking({
                 service_id: selectedService,
