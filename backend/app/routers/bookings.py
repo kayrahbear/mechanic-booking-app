@@ -116,6 +116,16 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     service_data = service_doc.to_dict()
     service_duration = service_data.get("minutes", 30)
     
+    # Get the single mechanic from the mechanics collection
+    mechanics_query = db.collection("mechanics").limit(1).stream()
+    mechanic_ids = [doc.id for doc in mechanics_query]
+    if not mechanic_ids:
+        logger.warning("No mechanics found in the database")
+    else:
+        # Assign the first mechanic (should be the only one as per requirements)
+        payload.mechanic_id = mechanic_ids[0]
+        logger.info(f"Automatically assigned mechanic ID: {payload.mechanic_id}")
+    
     # Calculate end time
     slot_end = payload.slot_start + timedelta(minutes=service_duration)
     
