@@ -12,7 +12,7 @@
 // or re-import from v2 following Firebase guidelines.
 import * as funcs from "firebase-functions/v1";
 import * as admin from "firebase-admin";
-import {UserRecord} from "firebase-functions/v1/auth";
+import { UserRecord } from "firebase-functions/v1/auth";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -29,10 +29,13 @@ export const createFirestoreUser = funcs.auth.user().onCreate(
 
     const userRef = db.collection("users").doc(user.uid);
 
+    // Get additional user data from auth context (metadata)
+    const userAuthData = await admin.auth().getUser(user.uid);
+
     const userData = {
       email: user.email || "", // Ensure email is not undefined
-      name: user.displayName || "", // Use displayName if available
-      phone: user.phoneNumber || null, // Use phone number if available
+      name: userAuthData.displayName || "", // Use displayName if available
+      phone: userAuthData.phoneNumber || "", // Use phone number if available or empty string
       role: "customer", // Default role for new users
       // mechanic_id: null, // Set this later if user becomes a mechanic
       created_at: admin.firestore.FieldValue.serverTimestamp(),

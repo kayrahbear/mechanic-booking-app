@@ -67,6 +67,12 @@ export default function Nav() {
                                             </span>
                                         )}
                                     </span>
+                                    <Link
+                                        href="/profile"
+                                        className={`bg-white dark:bg-neutral-700 px-3 py-1.5 border ${isActive('/profile') ? 'border-primary dark:border-accent' : 'border-neutral-300 dark:border-neutral-600'} rounded-md text-sm font-medium ${isActive('/profile') ? 'text-primary dark:text-accent' : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-600'}`}
+                                    >
+                                        Profile
+                                    </Link>
                                     <button
                                         onClick={handleLogout}
                                         className="bg-white dark:bg-neutral-700 px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 rounded-md text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-600"

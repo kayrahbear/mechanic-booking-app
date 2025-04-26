@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -30,9 +30,18 @@ export const loginWithEmail = async (email: string, password: string) => {
     }
 };
 
-export const registerWithEmail = async (email: string, password: string) => {
+export const registerWithEmail = async (email: string, password: string, name: string, phone: string) => {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+        // Update the user profile with name
+        await updateProfile(userCredential.user, {
+            displayName: name
+        });
+
+        // We can't set phoneNumber directly through updateProfile (Firebase restriction)
+        // It will be stored in Firestore through the Firebase Function
+
         return { user: userCredential.user, error: null };
     } catch (error) {
         return { user: null, error };

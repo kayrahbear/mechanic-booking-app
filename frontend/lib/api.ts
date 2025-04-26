@@ -129,4 +129,17 @@ export const updateMechanicAvailability = async (token: string, schedule: Mechan
     return response.data;
 };
 
+// User profile-related functions
+export const getUserProfile = async (token: string) => {
+    setAuthToken(token);
+    const response = await api.get('/api/user');
+    return response.data;
+};
+
+export const updateUserProfile = async (token: string, data: { name: string; phone?: string }) => {
+    setAuthToken(token);
+    const response = await api.put('/api/user', data);
+    return response.data;
+};
+
 export default api;

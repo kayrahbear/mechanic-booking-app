@@ -1,7 +1,8 @@
 // frontend/components/BookingForm.tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { fetchAvailableSlots, createBooking } from '../lib/api';
+import { fetchAvailableSlots, createBooking, getUserProfile } from '../lib/api';
+import { useAuth } from '../lib/auth-context';
 
 interface Service {
     id: string;
@@ -28,6 +29,7 @@ export default function BookingForm({
     initialDate
 }: BookingFormProps) {
     const router = useRouter();
+    const { user } = useAuth();
     const [selectedService, setSelectedService] = useState(initialServiceId || '');
     const [selectedDate, setSelectedDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
     const [availableSlots, setAvailableSlots] = useState<AvailabilitySlot[]>([]);
@@ -37,6 +39,7 @@ export default function BookingForm({
     const [customerPhone, setCustomerPhone] = useState('');
     const [notes, setNotes] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -46,6 +49,48 @@ export default function BookingForm({
             loadAvailableSlots();
         }
     }, [selectedDate, selectedService]);
+
+    // Load user profile data to populate form
+    useEffect(() => {
+        async function loadUserProfile() {
+            if (!user) return;
+
+            try {
+                setIsLoadingProfile(true);
+
+                // First try to use the displayName directly from the user object
+                if (user.displayName) {
+                    setCustomerName(user.displayName);
+                }
+
+                if (user.email) {
+                    setCustomerEmail(user.email);
+                }
+
+                // Then fetch the complete profile from the API to get the phone number
+                const token = await user.getIdToken();
+                const profile = await getUserProfile(token);
+
+                // Only update if we got valid data and fields are still empty
+                if (profile) {
+                    if (profile.name && !customerName) {
+                        setCustomerName(profile.name);
+                    }
+
+                    if (profile.phone) {
+                        setCustomerPhone(profile.phone);
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading user profile:', err);
+                // Don't show error to user, just fall back to manual entry
+            } finally {
+                setIsLoadingProfile(false);
+            }
+        }
+
+        loadUserProfile();
+    }, [user]);
 
     async function loadAvailableSlots() {
         try {
@@ -229,6 +274,7 @@ export default function BookingForm({
                                 onChange={(e) => setCustomerName(e.target.value)}
                                 className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                 required
+                                disabled={isLoadingProfile}
                             />
                         </div>
 
@@ -243,6 +289,7 @@ export default function BookingForm({
                                 onChange={(e) => setCustomerEmail(e.target.value)}
                                 className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                 required
+                                disabled={isLoadingProfile}
                             />
                         </div>
 
@@ -256,6 +303,7 @@ export default function BookingForm({
                                 value={customerPhone}
                                 onChange={(e) => setCustomerPhone(e.target.value)}
                                 className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                disabled={isLoadingProfile}
                             />
                         </div>
                     </div>

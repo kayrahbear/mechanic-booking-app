@@ -12,6 +12,8 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
@@ -31,10 +33,16 @@ export default function Register() {
             return;
         }
 
+        // Validate name is not empty
+        if (!name.trim()) {
+            setError('Name is required');
+            return;
+        }
+
         setLoading(true);
         setError('');
 
-        const { error } = await registerWithEmail(email, password);
+        const { error } = await registerWithEmail(email, password, name, phone);
 
         if (error) {
             // Extract Firebase error message
@@ -63,10 +71,26 @@ export default function Register() {
                     </p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm -space-y-px">
+                    <div className="rounded-md shadow-sm space-y-4">
                         <div>
-                            <label htmlFor="email-address" className="sr-only">
-                                Email address
+                            <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                Full Name
+                            </label>
+                            <input
+                                id="name"
+                                name="name"
+                                type="text"
+                                autoComplete="name"
+                                required
+                                className="appearance-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
+                                placeholder="Full Name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="email-address" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                Email Address
                             </label>
                             <input
                                 id="email-address"
@@ -74,14 +98,29 @@ export default function Register() {
                                 type="email"
                                 autoComplete="email"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
+                                className="appearance-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
                                 placeholder="Email address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label htmlFor="password" className="sr-only">
+                            <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                Phone Number
+                            </label>
+                            <input
+                                id="phone"
+                                name="phone"
+                                type="tel"
+                                autoComplete="tel"
+                                className="appearance-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
+                                placeholder="Phone Number"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                 Password
                             </label>
                             <input
@@ -90,14 +129,14 @@ export default function Register() {
                                 type="password"
                                 autoComplete="new-password"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
+                                className="appearance-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label htmlFor="confirm-password" className="sr-only">
+                            <label htmlFor="confirm-password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                 Confirm Password
                             </label>
                             <input
@@ -106,7 +145,7 @@ export default function Register() {
                                 type="password"
                                 autoComplete="new-password"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
+                                className="appearance-none relative block w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-primary focus:border-primary dark:focus:border-accent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white sm:text-sm"
                                 placeholder="Confirm Password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
