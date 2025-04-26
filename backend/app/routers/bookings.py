@@ -116,15 +116,23 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     service_data = service_doc.to_dict()
     service_duration = service_data.get("minutes", 30)
     
-    # Get the single mechanic from the mechanics collection
-    mechanics_query = db.collection("mechanics").limit(1).stream()
-    mechanic_ids = [doc.id for doc in mechanics_query]
-    if not mechanic_ids:
-        logger.warning("No mechanics found in the database")
-    else:
-        # Assign the first mechanic (should be the only one as per requirements)
-        payload.mechanic_id = mechanic_ids[0]
-        logger.info(f"Automatically assigned mechanic ID: {payload.mechanic_id}")
+    # Find the mechanic user via Firebase Auth (users with mechanic custom claim)
+    try:
+        # List users is limited to 1000 by default, but we only expect a few users
+        # and only one mechanic as per the requirements
+        mechanic_uid = None
+        for user in auth.list_users().iterate_all():
+            if user.custom_claims and user.custom_claims.get('mechanic', False):
+                mechanic_uid = user.uid
+                # Use the mechanic's UID directly
+                payload.mechanic_id = mechanic_uid
+                logger.info(f"Automatically assigned mechanic ID: {mechanic_uid}")
+                break
+                
+        if not mechanic_uid:
+            logger.warning("No mechanic user found in Firebase Auth")
+    except Exception as e:
+        logger.error(f"Error finding mechanic user: {str(e)}")
     
     # Calculate end time
     slot_end = payload.slot_start + timedelta(minutes=service_duration)
