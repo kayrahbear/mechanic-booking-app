@@ -97,19 +97,19 @@ export default function MechanicAvailabilityManager({
     ];
 
     return (
-        <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-6">Set Your Weekly Availability</h2>
+        <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card border border-neutral-100 dark:border-neutral-700">
+            <h2 className="text-xl font-semibold mb-6 text-neutral-900 dark:text-white">Set Your Weekly Availability</h2>
 
             <div className="space-y-6">
                 {days.map(({ key, label }) => (
                     <div key={key} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         <div className="w-full sm:w-1/4">
-                            <label className="inline-flex items-center">
+                            <label className="inline-flex items-center text-neutral-900 dark:text-neutral-200">
                                 <input
                                     type="checkbox"
                                     checked={isAvailable[key]}
                                     onChange={() => handleToggleDay(key)}
-                                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                    className="rounded border-gray-300 dark:border-neutral-600 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                                 />
                                 <span className="ml-2 font-medium">{label}</span>
                             </label>
@@ -118,22 +118,22 @@ export default function MechanicAvailabilityManager({
                         {isAvailable[key] && (
                             <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-3/4">
                                 <div className="flex flex-col w-1/2">
-                                    <label className="text-sm text-gray-600 mb-1">Start Time</label>
+                                    <label className="text-sm text-neutral-700 dark:text-neutral-300 mb-1">Start Time</label>
                                     <input
                                         type="time"
                                         value={schedule[key as keyof WeekSchedule].start || ''}
                                         onChange={(e) => handleTimeChange(key, 'start', e.target.value)}
-                                        className="rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                        className="rounded-md border-gray-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                                     />
                                 </div>
 
                                 <div className="flex flex-col w-1/2">
-                                    <label className="text-sm text-gray-600 mb-1">End Time</label>
+                                    <label className="text-sm text-neutral-700 dark:text-neutral-300 mb-1">End Time</label>
                                     <input
                                         type="time"
                                         value={schedule[key as keyof WeekSchedule].end || ''}
                                         onChange={(e) => handleTimeChange(key, 'end', e.target.value)}
-                                        className="rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                        className="rounded-md border-gray-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                                     />
                                 </div>
                             </div>
@@ -146,7 +146,7 @@ export default function MechanicAvailabilityManager({
                 <button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isLoading ? 'Saving...' : 'Save Schedule'}
                 </button>
