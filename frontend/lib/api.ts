@@ -33,13 +33,56 @@ export const getAvailability = async (date: string) => {
     return response.data;
 };
 
+interface BackendSlot {
+    start: string;
+    is_free: boolean;
+}
+
 // Legacy function for backward compatibility
 export const fetchAvailableSlots = async (date: string, service_id?: string) => {
-    const url = service_id
-        ? `/api/availability?date=${date}&service_id=${service_id}`
-        : `/api/availability?date=${date}`;
-    const response = await axios.get(url);
-    return response.data;
+    // Build query string
+    const queryString = service_id
+        ? `date=${date}&service_id=${service_id}`
+        : `date=${date}`;
+
+    // Determine environment (browser vs. Node / SSR)
+    const isBrowser = typeof window !== 'undefined';
+
+    let response;
+
+    if (isBrowser) {
+        // In the browser we can rely on the Next.js API route proxy
+        response = await axios.get(`/api/availability?${queryString}`);
+    } else {
+        // On the server (getServerSideProps / API routes) we call the backend directly
+        const backendBase = process.env.NEXT_PUBLIC_API_BASE;
+        if (!backendBase) {
+            throw new Error('Missing NEXT_PUBLIC_API_BASE environment variable for server-side availability fetch');
+        }
+        // Backend expects the query parameter to be named "day" not "date"
+        const backendQuery = service_id
+            ? `day=${date}&service_id=${service_id}`
+            : `day=${date}`;
+        response = await axios.get(`${backendBase}/availability?${backendQuery}`);
+    }
+
+    const data = response.data;
+
+    // If backend returned the raw slot list, convert it to the shape expected by the UI
+    if (Array.isArray(data)) {
+        const slots: Record<string, string> = {};
+        data.forEach((slot: BackendSlot) => {
+            const start = new Date(slot.start);
+            if (!isNaN(start.getTime())) {
+                const timeKey = start.toISOString().split('T')[1].substring(0, 5); // HH:MM
+                slots[timeKey] = slot.is_free ? 'free' : 'booked';
+            }
+        });
+        return { date, slots };
+    }
+
+    // Otherwise assume the data is already in the desired shape
+    return data;
 };
 
 export const createBooking = async (bookingData: Omit<Booking, 'id' | 'status'>) => {
