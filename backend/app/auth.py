@@ -5,6 +5,8 @@ import firebase_admin
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError
 from typing import Optional
 from pydantic import BaseModel
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 # Ensure Firebase Admin SDK is initialized exactly once.
 # This is required before calling auth.verify_id_token.
@@ -28,6 +30,9 @@ class User(BaseModel):
     role: str = "customer"
     is_admin: bool = False
     is_mechanic: bool = False
+
+# Pseudo-email identifier we will assign to Cloud Scheduler calls
+SCHEDULER_UID = "cloud-scheduler"
 
 async def get_current_user(authorization: Optional[str] = Header(None)) -> Optional[User]:
     """
@@ -122,3 +127,43 @@ async def get_mechanic_user(current_user: User = Depends(get_current_user)) -> U
         )
     
     return current_user 
+
+async def get_scheduler_or_mechanic_user(
+    authorization: Optional[str] = Header(None),
+    x_cloudscheduler: Optional[str] = Header(None, alias="X-CloudScheduler"),
+    user_agent: Optional[str] = Header(None, alias="User-Agent"),
+) -> User:
+    """Dependency that authorises either:
+    • Firebase Auth user with mechanic/admin role (via get_current_user)
+    • Google Cloud Scheduler (or other SA) request identified by OIDC or headers.
+    """
+    # First, try standard Firebase auth path
+    current_user = await get_current_user(authorization=authorization)
+    if current_user and (current_user.is_admin or current_user.is_mechanic):
+        return current_user
+
+    # Next, accept Cloud Scheduler HTTP calls authenticated with an OIDC token or headers.
+    # Cloud Scheduler normally sets User-Agent: "Google-Cloud-Scheduler" and can optionally
+    # set X-CloudScheduler header. In addition, Cloud Run will have validated the token if
+    # the service requires authentication, but we still introspect to grab the email.
+    if x_cloudscheduler or (user_agent and "Google-Cloud-Scheduler" in user_agent):
+        # Best-effort decode email from OIDC token if provided
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+            try:
+                info = id_token.verify_oauth2_token(token, google_requests.Request())
+                email = info.get("email", "scheduler@gcp")
+            except Exception:  # noqa: BLE001
+                email = "scheduler@gcp"
+        else:
+            email = "scheduler@gcp"
+
+        return User(
+            uid=SCHEDULER_UID,
+            email=email,
+            role="system",
+            is_admin=True,
+            is_mechanic=False,
+        )
+
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised") 

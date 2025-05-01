@@ -105,3 +105,22 @@ class User(BaseModel):
     mechanic_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+
+# -- Availability Seeding (weekly) --
+class AvailabilitySeedRequest(BaseModel):
+    """Request body for POST /availability/seed."""
+    week_start: Optional[date] = Field(
+        default=None,
+        description="ISO date (YYYY-MM-DD) for the Monday of the week to seed. Defaults to next Monday.",
+    )
+    dry_run: bool = Field(False, description="If true, compute counts but do not write to Firestore.")
+
+
+class AvailabilitySeedResult(BaseModel):
+    """Response model returned by POST /availability/seed."""
+    week_start: date
+    days: int = 7  # always Monday-Sunday
+    created: int
+    updated: int
+    skipped: int
+    dry_run: bool = False
