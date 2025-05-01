@@ -173,7 +173,7 @@ resource "google_cloud_run_v2_service" "worker" {
     update = "3m"
     delete = "2m"
   }
-  
+
   # Just depend on worker, we no longer need to depend on module.secrets
   # since it's now using data sources instead of creating resources
   depends_on = [
