@@ -128,8 +128,7 @@ async def seed_availability(
                 skipped += 1
                 continue
 
-            transaction = db.transaction()
-            transaction(txn_fn)
+            db.run_transaction(txn_fn)
 
     if not req.dry_run:
         pass  # transactions executed inline above
