@@ -150,7 +150,7 @@ export const updateUserProfile = async (token: string, data: { name: string; pho
 
 export const seedAvailability = async (token: string): Promise<{ created: number; updated: number; skipped: number; }> => {
     setAuthToken(token);
-    const response = await api.post('/api/availability/seed');
+    const response = await api.post('/api/availability/seed', {});
     return response.data;
 };
 
