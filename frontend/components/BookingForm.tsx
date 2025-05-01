@@ -1,5 +1,5 @@
 // frontend/components/BookingForm.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchAvailableSlots, createBooking, getUserProfile } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
@@ -43,12 +43,37 @@ export default function BookingForm({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
+    // To avoid missing dependency warning, memoise `loadAvailableSlots`.
+
+    const loadAvailableSlots = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError('');
+            const data = await fetchAvailableSlots(selectedDate, selectedService);
+
+            // Transform the slots object to an array
+            const slotsArray = Object.entries(data.slots || {}).map(([time, status]) => ({
+                time,
+                status: status as 'free' | 'booked' | 'blocked'
+            }));
+
+            setAvailableSlots(slotsArray);
+            setSelectedTime(''); // Reset selected time when slots change
+        } catch (err) {
+            console.error('Error loading available slots:', err);
+            setError('Failed to load available time slots');
+            setAvailableSlots([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [selectedDate, selectedService]);
+
     // Fetch available slots when date or service changes
     useEffect(() => {
         if (selectedDate && selectedService) {
             loadAvailableSlots();
         }
-    }, [selectedDate, selectedService]);
+    }, [selectedDate, selectedService, loadAvailableSlots]);
 
     // Load user profile data to populate form
     useEffect(() => {
@@ -90,30 +115,7 @@ export default function BookingForm({
         }
 
         loadUserProfile();
-    }, [user]);
-
-    async function loadAvailableSlots() {
-        try {
-            setIsLoading(true);
-            setError('');
-            const data = await fetchAvailableSlots(selectedDate, selectedService);
-
-            // Transform the slots object to an array
-            const slotsArray = Object.entries(data.slots || {}).map(([time, status]) => ({
-                time,
-                status: status as 'free' | 'booked' | 'blocked'
-            }));
-
-            setAvailableSlots(slotsArray);
-            setSelectedTime(''); // Reset selected time when slots change
-        } catch (err) {
-            console.error('Error loading available slots:', err);
-            setError('Failed to load available time slots');
-            setAvailableSlots([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }
+    }, [user, customerName]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();

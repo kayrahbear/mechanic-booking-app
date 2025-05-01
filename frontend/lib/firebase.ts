@@ -30,7 +30,12 @@ export const loginWithEmail = async (email: string, password: string) => {
     }
 };
 
-export const registerWithEmail = async (email: string, password: string, name: string, phone: string) => {
+export const registerWithEmail = async (email: string, password: string, name: string, _phone: string) => {
+    // The phone number is currently captured by the UI and passed here so that it can be
+    // forwarded to a backend endpoint / cloud-function at a later stage. We intentionally
+    // prefix the parameter with an underscore to signal it is not yet used. To satisfy
+    // the linter we reference it via a `void` expression.
+    void _phone;
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
