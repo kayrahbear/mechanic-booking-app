@@ -28,6 +28,49 @@ async def get_availability(day: date = Query(...)):
         slots.append(Slot(start=start_iso, end=start_iso, is_free=(status=="free")))
     return slots
 
+# Define the transactional function outside the endpoint, decorated
+@firestore.transactional
+def _update_availability_in_transaction(transaction, doc_ref, slot_map, mech_id, day_date):
+    """
+    Executes the document create/update logic within a Firestore transaction.
+    Returns tuple: (created: bool, updated: bool)
+    """
+    snap = doc_ref.get(transaction=transaction)
+    if not snap.exists:
+        # Create new doc
+        transaction.set(
+            doc_ref,
+            {
+                "day": day_date.isoformat(),
+                "slots": slot_map,
+                "mechanics": {mech_id: True},
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            },
+        )
+        return True, False  # Created
+    else:
+        # Update existing doc
+        data = snap.to_dict()
+        merged_slots = data.get("slots", {})
+        for key, val in slot_map.items():
+            # Only overwrite if slot not present or not booked
+            if merged_slots.get(key) in (None, "free", "blocked"):
+                merged_slots[key] = val
+        mechanics_map = data.get("mechanics", {})
+        mechanics_map[mech_id] = True
+        transaction.update(
+            doc_ref,
+            {
+                "slots": merged_slots,
+                "mechanics": mechanics_map,
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            },
+        )
+        return False, True # Updated
+
+
+# The main endpoint function
 @router.post("/seed", response_model=AvailabilitySeedResult, status_code=202)
 @retry(
     retry=retry_if_exception_type((ServiceUnavailable, Aborted)),
@@ -67,13 +110,13 @@ async def seed_availability(
 
     # Build date list Monday-Sunday
     days = [week_start + timedelta(days=i) for i in range(7)]
-    batch = db.batch()  # Accumulate writes for efficiency; commit later each day.
+    # Remove batch creation - no longer needed
+    # batch = db.batch()
 
-    for day in days:
-        day_doc = db.collection("availability").document(day.isoformat())
-        day_data = day_doc.get().to_dict() if day_doc.get().exists else None
-
-    # We'll write per mechanic to avoid large docverts.
+    # Remove the outer day loop as transaction is per mechanic/day now
+    # for day in days:
+    #    day_doc = db.collection("availability").document(day.isoformat())
+    #    day_data = day_doc.get().to_dict() if day_doc.get().exists else None
 
     # For each mechanic, build/merge slots per day
     for mech in mechanics:
@@ -86,52 +129,33 @@ async def seed_availability(
                 skipped += 1
                 continue
 
+            if req.dry_run:
+                skipped += 1
+                continue # Skip Firestore interaction in dry run
+
             slot_map = build_slots(day_sched.start, day_sched.end)
             doc_ref = db.collection("availability").document(day_date.isoformat())
 
-            def txn_fn(transaction, **_):
-                nonlocal created, updated
-                snap = doc_ref.get(transaction=transaction)
-                if not snap.exists:
-                    # Create new doc
-                    transaction.set(
-                        doc_ref,
-                        {
-                            "day": day_date.isoformat(),
-                            "slots": slot_map,
-                            "mechanics": {mech.id: True},
-                            "created_at": firestore.SERVER_TIMESTAMP,
-                            "updated_at": firestore.SERVER_TIMESTAMP,
-                        },
-                    )
+            # Create a transaction object for each attempt
+            transaction = db.transaction()
+            # Call the decorated function, passing the transaction object
+            try:
+                created_flag, updated_flag = _update_availability_in_transaction(
+                    transaction, doc_ref, slot_map, mech.id, day_date
+                )
+                if created_flag:
                     created += 1
-                else:
-                    data = snap.to_dict()
-                    merged_slots = data.get("slots", {})
-                    for key, val in slot_map.items():
-                        # Only overwrite if slot not present or not booked
-                        if merged_slots.get(key) in (None, "free", "blocked"):
-                            merged_slots[key] = val
-                    mechanics_map = data.get("mechanics", {})
-                    mechanics_map[mech.id] = True
-                    transaction.update(
-                        doc_ref,
-                        {
-                            "slots": merged_slots,
-                            "mechanics": mechanics_map,
-                            "updated_at": firestore.SERVER_TIMESTAMP,
-                        },
-                    )
+                if updated_flag:
                     updated += 1
+            except Exception as e:
+                # Log or handle transaction errors if needed, although tenacity should retry
+                print(f"Transaction attempt failed for {mech.id} on {day_date}: {e}")
+                # Depending on retry logic, might need to re-raise or handle differently
+                raise # Re-raise to allow tenacity to handle retries
 
-            if req.dry_run:
-                skipped += 1
-                continue
-
-            db.run_transaction(txn_fn)
-
-    if not req.dry_run:
-        pass  # transactions executed inline above
+    # Removed the final check for dry_run as it's handled inside the loop
+    # if not req.dry_run:
+    #    pass # transactions executed inline above
 
     return AvailabilitySeedResult(
         week_start=week_start,
