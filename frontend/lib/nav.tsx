@@ -37,7 +37,7 @@ export default function Nav() {
                             <Link href="/availability" className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/availability') ? 'border-primary dark:border-accent text-neutral-900 dark:text-white' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-200'}`}>
                                 Availability
                             </Link>
-                            {user && (
+                            {userRole === 'customer' && (
                                 <Link href="/bookings" className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/bookings') ? 'border-primary dark:border-accent text-neutral-900 dark:text-white' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-200'}`}>
                                     My Bookings
                                 </Link>

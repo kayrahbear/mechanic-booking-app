@@ -105,6 +105,12 @@ export const getPendingBookings = async (token: string): Promise<Booking[]> => {
     return response.data;
 };
 
+export const getUpcomingBookings = async (token: string): Promise<Booking[]> => {
+    setAuthToken(token);
+    const response = await api.get('/api/bookings/mechanic/upcoming');
+    return response.data;
+};
+
 export const approveBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
     setAuthToken(token);
     const response = await api.post(`/api/bookings/${bookingId}/approval`, {

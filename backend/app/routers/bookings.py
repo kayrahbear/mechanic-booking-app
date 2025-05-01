@@ -451,3 +451,32 @@ async def get_pending_bookings(
         bookings.append(BookingOut(**booking_data))
     
     return bookings
+
+@router.get("/mechanic/upcoming", response_model=List[BookingOut])
+async def get_upcoming_bookings(
+    current_user = Depends(get_mechanic_user)
+):
+    """Get all confirmed upcoming bookings for the mechanic"""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    # Get all confirmed bookings
+    query = db.collection("bookings").where("status", "==", BookingStatus.CONFIRMED.value)
+    
+    # Add filter for future bookings (today and later)
+    now = datetime.now()
+    today_start = datetime(now.year, now.month, now.day)
+    query = query.where("slot_start", ">=", today_start)
+    
+    # Order by date
+    query = query.order_by("slot_start")
+    
+    # Execute query and format results
+    bookings = []
+    for doc in query.stream():
+        booking_data = doc.to_dict()
+        booking_data["id"] = doc.id
+        bookings.append(BookingOut(**booking_data))
+    
+    return bookings

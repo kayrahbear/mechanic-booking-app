@@ -5,16 +5,18 @@ import { useAuth } from '../../lib/auth-context';
 import { Booking, MechanicSchedule } from '../../lib/types';
 import MechanicAvailabilityManager from '../../components/MechanicAvailabilityManager';
 import PendingAppointmentsList from '../../components/PendingAppointmentsList';
-import { getPendingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
+import UpcomingAppointmentsList from '../../components/UpcomingAppointmentsList';
+import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
 
 export default function MechanicDashboard() {
     const { user, userRole } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
     const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
+    const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
     const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
     const [isProcessingBooking, setIsProcessingBooking] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'availability' | 'appointments'>('appointments');
+    const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability'>('pending');
     const [mechanicSchedule, setMechanicSchedule] = useState<MechanicSchedule | null>(null);
 
     useEffect(() => {
@@ -25,8 +27,12 @@ export default function MechanicDashboard() {
                 if (user) {
                     // Fetch pending bookings
                     const token = await user.getIdToken();
-                    const bookings = await getPendingBookings(token);
-                    setPendingBookings(bookings);
+                    const pendingBookingsData = await getPendingBookings(token);
+                    setPendingBookings(pendingBookingsData);
+
+                    // Fetch upcoming bookings
+                    const upcomingBookingsData = await getUpcomingBookings(token);
+                    setUpcomingBookings(upcomingBookingsData);
 
                     // Fetch mechanic schedule 
                     // TODO: Replace with actual endpoint when available
@@ -71,10 +77,13 @@ export default function MechanicDashboard() {
         try {
             if (user) {
                 const token = await user.getIdToken();
-                await approveBooking(token, bookingId, notes);
+                const updatedBooking = await approveBooking(token, bookingId, notes);
 
-                // Update the local state to remove the processed booking
+                // Update the local state to remove the processed booking from pending
                 setPendingBookings(pendingBookings.filter(booking => booking.id !== bookingId));
+
+                // Add the approved booking to upcoming bookings
+                setUpcomingBookings([...upcomingBookings, updatedBooking]);
             }
         } catch (err) {
             console.error('Error approving booking:', err);
@@ -125,10 +134,16 @@ export default function MechanicDashboard() {
 
                         <div className="flex border-b mb-6">
                             <button
-                                className={`py-2 px-4 font-medium ${activeTab === 'appointments' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('appointments')}
+                                className={`py-2 px-4 font-medium ${activeTab === 'pending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                onClick={() => setActiveTab('pending')}
                             >
                                 Pending Appointments {pendingBookings.length > 0 && `(${pendingBookings.length})`}
+                            </button>
+                            <button
+                                className={`py-2 px-4 font-medium ${activeTab === 'upcoming' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                onClick={() => setActiveTab('upcoming')}
+                            >
+                                Upcoming Appointments {upcomingBookings.length > 0 && `(${upcomingBookings.length})`}
                             </button>
                             <button
                                 className={`py-2 px-4 font-medium ${activeTab === 'availability' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
@@ -138,12 +153,18 @@ export default function MechanicDashboard() {
                             </button>
                         </div>
 
-                        {activeTab === 'appointments' && (
+                        {activeTab === 'pending' && (
                             <PendingAppointmentsList
                                 bookings={pendingBookings}
                                 onApprove={handleApproveBooking}
                                 onDeny={handleDenyBooking}
                                 isLoading={isProcessingBooking}
+                            />
+                        )}
+
+                        {activeTab === 'upcoming' && (
+                            <UpcomingAppointmentsList
+                                bookings={upcomingBookings}
                             />
                         )}
 
