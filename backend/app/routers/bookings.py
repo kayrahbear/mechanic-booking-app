@@ -52,6 +52,62 @@ class BookingApproval(BaseModel):
     approved: bool
     notes: Optional[str] = None
 
+# Mechanic-specific endpoints - MOVED TO TOP OF FILE
+@router.get("/mechanic/pending", response_model=List[BookingOut])
+async def get_pending_bookings(
+    current_user = Depends(get_mechanic_user)
+):
+    """Get all pending bookings that need mechanic approval"""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    # Get all pending bookings
+    query = db.collection("bookings").where("status", "==", BookingStatus.PENDING.value)
+    
+    # If the user is a mechanic (not admin), might filter by assigned mechanic in the future
+    
+    # Order by date (most recent first)
+    query = query.order_by("slot_start")
+    
+    # Execute query and format results
+    bookings = []
+    for doc in query.stream():
+        booking_data = doc.to_dict()
+        booking_data["id"] = doc.id
+        bookings.append(BookingOut(**booking_data))
+    
+    return bookings
+
+@router.get("/mechanic/upcoming", response_model=List[BookingOut])
+async def get_upcoming_bookings(
+    current_user = Depends(get_mechanic_user)
+):
+    """Get all confirmed upcoming bookings for the mechanic"""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    # Get all confirmed bookings
+    query = db.collection("bookings").where("status", "==", BookingStatus.CONFIRMED.value)
+    
+    # Add filter for future bookings (today and later)
+    now = datetime.now()
+    today_start = datetime(now.year, now.month, now.day)
+    query = query.where("slot_start", ">=", today_start)
+    
+    # Order by date
+    query = query.order_by("slot_start")
+    
+    # Execute query and format results
+    bookings = []
+    for doc in query.stream():
+        booking_data = doc.to_dict()
+        booking_data["id"] = doc.id
+        bookings.append(BookingOut(**booking_data))
+    
+    return bookings
+
 @router.post("", response_model=BookingOut, status_code=201)
 async def create_booking(
     payload: BookingCreate, 
@@ -425,58 +481,3 @@ async def approve_or_deny_booking(
     )
     
     return booking_out
-
-@router.get("/mechanic/pending", response_model=List[BookingOut])
-async def get_pending_bookings(
-    current_user = Depends(get_mechanic_user)
-):
-    """Get all pending bookings that need mechanic approval"""
-    db = get_client()
-    if not db:
-        raise HTTPException(500, "DB unavailable")
-    
-    # Get all pending bookings
-    query = db.collection("bookings").where("status", "==", BookingStatus.PENDING.value)
-    
-    # If the user is a mechanic (not admin), might filter by assigned mechanic in the future
-    
-    # Order by date (most recent first)
-    query = query.order_by("slot_start")
-    
-    # Execute query and format results
-    bookings = []
-    for doc in query.stream():
-        booking_data = doc.to_dict()
-        booking_data["id"] = doc.id
-        bookings.append(BookingOut(**booking_data))
-    
-    return bookings
-
-@router.get("/mechanic/upcoming", response_model=List[BookingOut])
-async def get_upcoming_bookings(
-    current_user = Depends(get_mechanic_user)
-):
-    """Get all confirmed upcoming bookings for the mechanic"""
-    db = get_client()
-    if not db:
-        raise HTTPException(500, "DB unavailable")
-    
-    # Get all confirmed bookings
-    query = db.collection("bookings").where("status", "==", BookingStatus.CONFIRMED.value)
-    
-    # Add filter for future bookings (today and later)
-    now = datetime.now()
-    today_start = datetime(now.year, now.month, now.day)
-    query = query.where("slot_start", ">=", today_start)
-    
-    # Order by date
-    query = query.order_by("slot_start")
-    
-    # Execute query and format results
-    bookings = []
-    for doc in query.stream():
-        booking_data = doc.to_dict()
-        booking_data["id"] = doc.id
-        bookings.append(BookingOut(**booking_data))
-    
-    return bookings
