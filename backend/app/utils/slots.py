@@ -4,13 +4,13 @@ from typing import Dict
 __all__ = ["build_slots"]
 
 
-def build_slots(start_time: str, end_time: str, granularity_min: int = 15) -> Dict[str, str]:
+def build_slots(start_time: str, end_time: str, granularity_min: int = 30) -> Dict[str, str]:
     """Generate a Firestore `slots` map for one day.
 
     Args:
         start_time: HH:MM string (24-hour) inclusive start of working hours.
         end_time:   HH:MM string (24-hour) exclusive end of working hours.
-        granularity_min: slot length in minutes (default 15).
+        granularity_min: slot length in minutes (default 30).
 
     Returns:
         Dict mapping "HH:MM" → "free" for each slot in the interval.
