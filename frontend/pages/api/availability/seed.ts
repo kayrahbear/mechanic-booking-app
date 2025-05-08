@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../../lib/httpClient';
 
 const backendBaseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -9,24 +9,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        // Forward the request to the backend
-        const response = await axios.post(
-            `${backendBaseUrl}/availability/seed`,
-            req.body,
-            {
-                headers: {
-                    Authorization: req.headers.authorization,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        // Set the authorization token from the request
+        const token = req.headers.authorization;
+        httpClient.setAuthToken(token as string);
 
-        return res.status(response.status).json(response.data);
+        // Forward the request to the backend
+        const data = await httpClient.post(`${backendBaseUrl}/availability/seed`, req.body);
+
+        return res.status(200).json(data);
     } catch (error: unknown) {
-        const axiosError = error as { response?: { status?: number; data?: { detail?: string } }; message?: string };
-        console.error('Error seeding availability:', axiosError.response?.data || axiosError.message);
-        return res.status(axiosError.response?.status || 500).json({
-            message: axiosError.response?.data?.detail || 'Failed to seed availability',
+        console.error('Error seeding availability:', error);
+
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                message: httpError.data || 'Failed to seed availability',
+            });
+        }
+
+        return res.status(500).json({
+            message: 'Failed to seed availability',
         });
     }
 } 

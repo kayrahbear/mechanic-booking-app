@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../../../lib/httpClient';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -18,23 +18,18 @@ export default async function handler(
     }
 
     try {
-        const response = await axios.get(
-            `${apiUrl}/bookings/mechanic/pending`,
-            {
-                headers: {
-                    'Authorization': token
-                }
-            }
-        );
+        httpClient.setAuthToken(token);
+        const data = await httpClient.get(`${apiUrl}/bookings/mechanic/pending`);
 
-        return res.status(200).json(response.data);
+        return res.status(200).json(data);
     } catch (error: unknown) {
         console.error('Error fetching pending bookings:', error);
 
-        // Type guard for axios error with response
-        if (axios.isAxiosError(error) && error.response) {
-            return res.status(error.response.status || 500).json({
-                error: error.response.data?.detail || 'Failed to fetch pending bookings'
+        // Type guard for HTTP error with status
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Failed to fetch pending bookings'
             });
         }
 

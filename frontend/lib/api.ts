@@ -1,25 +1,16 @@
-import axios from 'axios';
+import httpClient from './httpClient';
 import { Booking, MechanicSchedule } from './types';
-
-const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE ? '' : '/api'  // Empty base URL when using direct backend URL
-});
 
 // Auth utilities
 export const setAuthToken = (token: string | null) => {
-    if (token) {
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-        delete api.defaults.headers.common['Authorization'];
-    }
+    httpClient.setAuthToken(token);
 };
 
 // Basic API endpoints
 export const getServices = async () => {
     // Use the API proxy endpoint when in the browser
     const endpoint = typeof window !== 'undefined' ? '/api/services' : `${process.env.NEXT_PUBLIC_API_BASE}/services`;
-    const response = await axios.get(endpoint);
-    return response.data;
+    return httpClient.get(endpoint);
 };
 
 // Legacy function for backward compatibility
@@ -29,8 +20,7 @@ export const fetchServices = async () => {
 
 export const getAvailability = async (date: string) => {
     // Use the API proxy endpoint
-    const response = await axios.get(`/api/availability?date=${date}`);
-    return response.data;
+    return httpClient.get(`/api/availability`, { params: { date } });
 };
 
 interface BackendSlot {
@@ -40,19 +30,20 @@ interface BackendSlot {
 
 // Legacy function for backward compatibility
 export const fetchAvailableSlots = async (date: string, service_id?: string) => {
-    // Build query string
-    const queryString = service_id
-        ? `date=${date}&service_id=${service_id}`
-        : `date=${date}`;
+    // Build query parameters
+    const params: Record<string, string> = { date };
+    if (service_id) {
+        params.service_id = service_id;
+    }
 
     // Determine environment (browser vs. Node / SSR)
     const isBrowser = typeof window !== 'undefined';
 
-    let response;
+    let data;
 
     if (isBrowser) {
         // In the browser we can rely on the Next.js API route proxy
-        response = await axios.get(`/api/availability?${queryString}`);
+        data = await httpClient.get(`/api/availability`, { params });
     } else {
         // On the server (getServerSideProps / API routes) we call the backend directly
         const backendBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -60,13 +51,12 @@ export const fetchAvailableSlots = async (date: string, service_id?: string) => 
             throw new Error('Missing NEXT_PUBLIC_API_BASE environment variable for server-side availability fetch');
         }
         // Backend expects the query parameter to be named "day" not "date"
-        const backendQuery = service_id
-            ? `day=${date}&service_id=${service_id}`
-            : `day=${date}`;
-        response = await axios.get(`${backendBase}/availability?${backendQuery}`);
+        const backendParams: Record<string, string> = { day: date };
+        if (service_id) {
+            backendParams.service_id = service_id;
+        }
+        data = await httpClient.get(`${backendBase}/availability`, { params: backendParams });
     }
-
-    const data = response.data;
 
     // If backend returned the raw slot list, convert it to the shape expected by the UI
     if (Array.isArray(data)) {
@@ -88,70 +78,60 @@ export const fetchAvailableSlots = async (date: string, service_id?: string) => 
 };
 
 export const createBooking = async (bookingData: Omit<Booking, 'id' | 'status'>) => {
-    const response = await axios.post('/api/bookings', bookingData);
-    return response.data;
+    return httpClient.post('/api/bookings', bookingData);
 };
 
 export const getBookings = async (token: string) => {
     setAuthToken(token);
-    const response = await api.get('/api/bookings');
-    return response.data;
+    return httpClient.get('/api/bookings');
 };
 
 // Mechanic-specific endpoints
 export const getPendingBookings = async (token: string): Promise<Booking[]> => {
     setAuthToken(token);
-    const response = await api.get('/api/bookings/mechanic/pending');
-    return response.data;
+    return httpClient.get('/api/bookings/mechanic/pending');
 };
 
 export const getUpcomingBookings = async (token: string): Promise<Booking[]> => {
     setAuthToken(token);
-    const response = await api.get('/api/bookings/mechanic/upcoming');
-    return response.data;
+    return httpClient.get('/api/bookings/mechanic/upcoming');
 };
 
 export const approveBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
     setAuthToken(token);
-    const response = await api.post(`/api/bookings/${bookingId}/approval`, {
+    return httpClient.post(`/api/bookings/${bookingId}/approval`, {
         approved: true,
         notes
     });
-    return response.data;
 };
 
 export const denyBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
     setAuthToken(token);
-    const response = await api.post(`/api/bookings/${bookingId}/approval`, {
+    return httpClient.post(`/api/bookings/${bookingId}/approval`, {
         approved: false,
         notes
     });
-    return response.data;
 };
 
 export const updateMechanicAvailability = async (token: string, schedule: MechanicSchedule): Promise<MechanicSchedule> => {
     setAuthToken(token);
-    const response = await api.post('/api/mechanic/availability', { schedule });
-    return response.data;
+    return httpClient.post('/api/mechanic/availability', { schedule });
 };
 
 // User profile-related functions
 export const getUserProfile = async (token: string) => {
     setAuthToken(token);
-    const response = await api.get('/api/user');
-    return response.data;
+    return httpClient.get('/api/user');
 };
 
 export const updateUserProfile = async (token: string, data: { name: string; phone?: string }) => {
     setAuthToken(token);
-    const response = await api.put('/api/user', data);
-    return response.data;
+    return httpClient.put('/api/user', data);
 };
 
 export const seedAvailability = async (token: string): Promise<{ created: number; updated: number; skipped: number; }> => {
     setAuthToken(token);
-    const response = await api.post('/api/availability/seed', {});
-    return response.data;
+    return httpClient.post('/api/availability/seed', {});
 };
 
-export default api;
+export default httpClient;

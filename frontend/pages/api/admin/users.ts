@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../../lib/httpClient';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -18,15 +18,15 @@ export default async function handler(
     }
 
     try {
-        const response = await axios.get(`${apiUrl}/admin/users`, {
-            headers: { 'Authorization': token },
-        });
-        return res.status(200).json(response.data);
+        httpClient.setAuthToken(token as string);
+        const data = await httpClient.get(`${apiUrl}/admin/users`);
+        return res.status(200).json(data);
     } catch (error: unknown) {
         console.error('Error listing users:', error);
-        if (axios.isAxiosError(error) && error.response) {
-            return res.status(error.response.status || 500).json({
-                error: error.response.data?.detail || 'Failed to list users'
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Failed to list users'
             });
         }
         return res.status(500).json({ error: 'An error occurred' });

@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../lib/httpClient';
 
 interface Service {
     id: string;
@@ -16,10 +16,9 @@ const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
     console.log(`[getServerSideProps /services] Fetching from backend: ${backendUrl}/services`);
     try {
-        const response = await axios.get(`${backendUrl}/services`, {
+        const services = await httpClient.get<Service[]>(`${backendUrl}/services`, {
             timeout: 5000
         });
-        const services = response.data || [];
         console.log(`[getServerSideProps /services] Received ${services.length} services from backend.`);
         return {
             props: {
@@ -28,12 +27,12 @@ export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = a
         };
     } catch (error) {
         console.error('[getServerSideProps /services] Error fetching services directly from backend:', error);
-        if (axios.isAxiosError(error)) {
-            console.error('[getServerSideProps /services] Axios error details:', {
-                message: error.message,
-                code: error.code,
-                status: error.response?.status,
-                data: error.response?.data
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            console.error('[getServerSideProps /services] HTTP error details:', {
+                message: httpError.message,
+                status: httpError.status,
+                data: httpError.data
             });
         }
         return {

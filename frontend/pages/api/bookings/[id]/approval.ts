@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../../../lib/httpClient';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -19,26 +19,21 @@ export default async function handler(
     }
 
     try {
-        const response = await axios.post(
-            `${apiUrl}/bookings/${id}/approval`,
-            req.body,
-            {
-                headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        httpClient.setAuthToken(token);
+        const data = await httpClient.post(`${apiUrl}/bookings/${id}/approval`, req.body);
 
-        return res.status(200).json(response.data);
+        return res.status(200).json(data);
     } catch (error: unknown) {
         console.error('Error updating booking approval status:',
-            axios.isAxiosError(error) ? error.response?.data || error.message : error);
+            (error as HttpClientError).status
+                ? `Status: ${(error as HttpClientError).status}, Data: ${(error as HttpClientError).data}`
+                : error);
 
         // Forward the backend's error status and message if available
-        if (axios.isAxiosError(error) && error.response) {
-            return res.status(error.response.status || 500).json({
-                error: error.response.data?.detail || 'Failed to update booking'
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Failed to update booking'
             });
         }
 

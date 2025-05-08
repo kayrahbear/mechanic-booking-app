@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../../lib/httpClient';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
@@ -14,40 +14,27 @@ export default async function handler(
     }
 
     try {
+        httpClient.setAuthToken(token as string);
+
         if (req.method === 'GET') {
             // Get mechanic availability
-            const response = await axios.get(
-                `${apiUrl}/mechanic/availability`,
-                {
-                    headers: {
-                        'Authorization': token
-                    }
-                }
-            );
-            return res.status(200).json(response.data);
+            const data = await httpClient.get(`${apiUrl}/mechanic/availability`);
+            return res.status(200).json(data);
         } else if (req.method === 'POST') {
             // Update mechanic availability
-            const response = await axios.post(
-                `${apiUrl}/mechanic/availability`,
-                req.body,
-                {
-                    headers: {
-                        'Authorization': token,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            return res.status(200).json(response.data);
+            const data = await httpClient.post(`${apiUrl}/mechanic/availability`, req.body);
+            return res.status(200).json(data);
         } else {
             return res.status(405).json({ error: 'Method not allowed' });
         }
     } catch (error: unknown) {
         console.error('Error managing mechanic availability:', error);
 
-        // Type guard for axios error with response
-        if (axios.isAxiosError(error) && error.response) {
-            return res.status(error.response.status || 500).json({
-                error: error.response.data?.detail || 'Failed to manage mechanic availability'
+        // Type guard for HTTP error with status
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Failed to manage mechanic availability'
             });
         }
 

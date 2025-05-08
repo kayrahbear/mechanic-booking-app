@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../lib/httpClient';
 
 // Read the backend URL from environment variables
 // Ensure this is set in your deployment environment (e.g., Cloud Run service)
@@ -23,35 +23,33 @@ export default async function handler(
 
     try {
         // Forward the request to the actual backend API
-        const response = await axios.get(`${apiUrl}/services`, {
-            // Forward any relevant headers if needed, e.g., Authorization for protected routes
-            // headers: { ...req.headers }, // Be cautious forwarding all headers
+        const data = await httpClient.get(`${apiUrl}/services`, {
             // Set a reasonable timeout
             timeout: 5000 // 5 seconds
         });
 
-        console.log(`[API Route /api/services] Backend response status: ${response.status}`);
-        console.log(`[API Route /api/services] Backend response data length: ${response.data?.length ?? 'N/A'}`);
+        console.log(`[API Route /api/services] Backend response successful`);
+        console.log(`[API Route /api/services] Backend response data length: ${Array.isArray(data) ? data.length : 'N/A'}`);
 
         // Send the backend response back to the client
-        return res.status(200).json(response.data);
+        return res.status(200).json(data);
 
     } catch (error: unknown) {
         console.error('[API Route /api/services] Error fetching services from backend:', error);
 
-        if (axios.isAxiosError(error)) {
-            console.error('[API Route /api/services] Axios error details:', {
-                message: error.message,
-                code: error.code,
-                status: error.response?.status,
-                data: error.response?.data
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            console.error('[API Route /api/services] HTTP error details:', {
+                message: httpError.message,
+                status: httpError.status,
+                data: httpError.data
             });
             // Forward backend error status and detail if possible
-            return res.status(error.response?.status || 500).json({
-                error: error.response?.data?.detail || 'Failed to fetch services from backend'
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Failed to fetch services from backend'
             });
         } else {
-            console.error('[API Route /api/services] Non-Axios error:', error);
+            console.error('[API Route /api/services] Network or other error:', error);
         }
 
         // Generic internal server error
