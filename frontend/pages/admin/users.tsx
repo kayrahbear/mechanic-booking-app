@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuth } from '../../lib/auth-context';
 import ProtectedRoute from '../../lib/protected-route';
-import axios from 'axios';
+import httpClient, { HttpClientError } from '../../lib/httpClient';
 
 interface UserData {
     uid: string;
@@ -31,13 +31,12 @@ export default function AdminUserManagement() {
             setError(null);
             try {
                 const token = await user.getIdToken();
-                const response = await axios.get('/api/admin/users', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                setUsers(response.data);
+                httpClient.setAuthToken(token);
+                const data = await httpClient.get<UserData[]>('/api/admin/users');
+                setUsers(data);
             } catch (err) {
                 console.error('Error fetching users:', err);
-                const errorMsg = (axios.isAxiosError(err) && err.response?.data?.error) || 'Failed to load users. Ensure you are an admin.';
+                const errorMsg = ((err as HttpClientError).data as { error?: string })?.error || 'Failed to load users. Ensure you are an admin.';
                 setError(errorMsg);
             } finally {
                 setLoading(false);
@@ -52,22 +51,17 @@ export default function AdminUserManagement() {
         setError(null);
         try {
             const token = await user.getIdToken();
-            await axios.post(
-                `/api/admin/users/${uid}/role`,
-                { role: newRole },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            httpClient.setAuthToken(token);
+
+            await httpClient.post(`/api/admin/users/${uid}/role`, { role: newRole });
+
             // Refresh user list after successful update
-            const response = await axios.get('/api/admin/users', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setUsers(response.data);
+            const data = await httpClient.get<UserData[]>('/api/admin/users');
+            setUsers(data);
             alert(`Role updated successfully for user ${uid}`);
         } catch (err) {
             console.error(`Error updating role for user ${uid}:`, err);
-            const errorMsg = (axios.isAxiosError(err) && err.response?.data?.error) || 'Failed to update role.';
+            const errorMsg = ((err as HttpClientError).data as { error?: string })?.error || 'Failed to update role.';
             setError(errorMsg);
         } finally {
             setUpdatingRole(null);
