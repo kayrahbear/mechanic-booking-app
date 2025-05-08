@@ -10,35 +10,41 @@ interface Service {
     price: number;
 }
 
-// Use NEXT_PUBLIC_API_BASE from the environment variables instead of NEXT_PUBLIC_API_BASE
-const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+// No longer directly using NEXT_PUBLIC_API_BASE here for the direct backend call
+// const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'; 
 
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
-    console.log(`[getServerSideProps /services] Fetching from backend: ${backendUrl}/services`);
+    // Construct the URL to call our own Next.js API route (/api/services)
+    // This needs to be an absolute URL when running server-side.
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL || 'http://localhost:3000';
+    const internalApiRoute = `${appBaseUrl}/api/services`;
+
+    console.log(`[getServerSideProps /services] Fetching from own API route: ${internalApiRoute}`);
     try {
-        const response = await axios.get(`${backendUrl}/services`, {
-            timeout: 5000
+        // Call the Next.js API route (/api/services) which will then call the backend
+        const response = await axios.get(internalApiRoute, {
+            timeout: 7000 // Increased timeout slightly to account for the extra hop
         });
         const services = response.data || [];
-        console.log(`[getServerSideProps /services] Received ${services.length} services from backend.`);
+        console.log(`[getServerSideProps /services] Received ${services.length} services from API route.`);
         return {
             props: {
                 services,
             },
         };
     } catch (error) {
-        console.error('[getServerSideProps /services] Error fetching services directly from backend:', error);
+        console.error('[getServerSideProps /services] Error fetching services from own API route:', error);
         if (axios.isAxiosError(error)) {
             console.error('[getServerSideProps /services] Axios error details:', {
                 message: error.message,
                 code: error.code,
                 status: error.response?.status,
-                data: error.response?.data
+                // data: error.response?.data // Be careful logging potentially large/sensitive data
             });
         }
         return {
             props: {
-                services: [],
+                services: [], // Return empty services on error
             },
         };
     }
