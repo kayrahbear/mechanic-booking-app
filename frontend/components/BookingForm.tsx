@@ -1,16 +1,8 @@
 // frontend/components/BookingForm.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { fetchAvailableSlots, createBooking, getUserProfile } from '../lib/api';
+import { fetchAvailableSlots, createBooking, getUserProfile, Service } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
-
-interface Service {
-    id: string;
-    name: string;
-    minutes: number;
-    description: string;
-    price: number;
-}
 
 interface AvailabilitySlot {
     time: string;

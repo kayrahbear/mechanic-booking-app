@@ -1,35 +1,56 @@
 import httpClient from './httpClient';
 import { Booking, MechanicSchedule } from './types';
 
+// Define interfaces for API responses
+export interface Service {
+    id: string;
+    name: string;
+    minutes: number;
+    description: string;
+    price: number;
+}
+
+export interface AvailabilityResponse {
+    date: string;
+    slots: Record<string, string>;
+}
+
+export interface BackendSlot {
+    start: string;
+    is_free: boolean;
+}
+
+export interface UserProfile {
+    name?: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+}
+
 // Auth utilities
 export const setAuthToken = (token: string | null) => {
     httpClient.setAuthToken(token);
 };
 
 // Basic API endpoints
-export const getServices = async () => {
+export const getServices = async (): Promise<Service[]> => {
     // Use the API proxy endpoint when in the browser
     const endpoint = typeof window !== 'undefined' ? '/api/services' : `${process.env.NEXT_PUBLIC_API_BASE}/services`;
-    return httpClient.get(endpoint);
+    return httpClient.get<Service[]>(endpoint);
 };
 
 // Legacy function for backward compatibility
-export const fetchServices = async () => {
+export const fetchServices = async (): Promise<Service[]> => {
     return getServices();
 };
 
-export const getAvailability = async (date: string) => {
+export const getAvailability = async (date: string): Promise<AvailabilityResponse> => {
     // Use the API proxy endpoint
-    return httpClient.get(`/api/availability`, { params: { date } });
+    return httpClient.get<AvailabilityResponse>(`/api/availability`, { params: { date } });
 };
 
-interface BackendSlot {
-    start: string;
-    is_free: boolean;
-}
-
 // Legacy function for backward compatibility
-export const fetchAvailableSlots = async (date: string, service_id?: string) => {
+export const fetchAvailableSlots = async (date: string, service_id?: string): Promise<AvailabilityResponse> => {
     // Build query parameters
     const params: Record<string, string> = { date };
     if (service_id) {
@@ -43,7 +64,7 @@ export const fetchAvailableSlots = async (date: string, service_id?: string) => 
 
     if (isBrowser) {
         // In the browser we can rely on the Next.js API route proxy
-        data = await httpClient.get(`/api/availability`, { params });
+        data = await httpClient.get<BackendSlot[] | AvailabilityResponse>(`/api/availability`, { params });
     } else {
         // On the server (getServerSideProps / API routes) we call the backend directly
         const backendBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -55,7 +76,7 @@ export const fetchAvailableSlots = async (date: string, service_id?: string) => 
         if (service_id) {
             backendParams.service_id = service_id;
         }
-        data = await httpClient.get(`${backendBase}/availability`, { params: backendParams });
+        data = await httpClient.get<BackendSlot[] | AvailabilityResponse>(`${backendBase}/availability`, { params: backendParams });
     }
 
     // If backend returned the raw slot list, convert it to the shape expected by the UI
@@ -74,32 +95,32 @@ export const fetchAvailableSlots = async (date: string, service_id?: string) => 
     }
 
     // Otherwise assume the data is already in the desired shape
-    return data;
+    return data as AvailabilityResponse;
 };
 
-export const createBooking = async (bookingData: Omit<Booking, 'id' | 'status'>) => {
-    return httpClient.post('/api/bookings', bookingData);
+export const createBooking = async (bookingData: Omit<Booking, 'id' | 'status'>): Promise<Booking> => {
+    return httpClient.post<Booking>('/api/bookings', bookingData);
 };
 
-export const getBookings = async (token: string) => {
+export const getBookings = async (token: string): Promise<Booking[]> => {
     setAuthToken(token);
-    return httpClient.get('/api/bookings');
+    return httpClient.get<Booking[]>('/api/bookings');
 };
 
 // Mechanic-specific endpoints
 export const getPendingBookings = async (token: string): Promise<Booking[]> => {
     setAuthToken(token);
-    return httpClient.get('/api/bookings/mechanic/pending');
+    return httpClient.get<Booking[]>('/api/bookings/mechanic/pending');
 };
 
 export const getUpcomingBookings = async (token: string): Promise<Booking[]> => {
     setAuthToken(token);
-    return httpClient.get('/api/bookings/mechanic/upcoming');
+    return httpClient.get<Booking[]>('/api/bookings/mechanic/upcoming');
 };
 
 export const approveBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
     setAuthToken(token);
-    return httpClient.post(`/api/bookings/${bookingId}/approval`, {
+    return httpClient.post<Booking>(`/api/bookings/${bookingId}/approval`, {
         approved: true,
         notes
     });
@@ -107,7 +128,7 @@ export const approveBooking = async (token: string, bookingId: string, notes?: s
 
 export const denyBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
     setAuthToken(token);
-    return httpClient.post(`/api/bookings/${bookingId}/approval`, {
+    return httpClient.post<Booking>(`/api/bookings/${bookingId}/approval`, {
         approved: false,
         notes
     });
@@ -115,23 +136,23 @@ export const denyBooking = async (token: string, bookingId: string, notes?: stri
 
 export const updateMechanicAvailability = async (token: string, schedule: MechanicSchedule): Promise<MechanicSchedule> => {
     setAuthToken(token);
-    return httpClient.post('/api/mechanic/availability', { schedule });
+    return httpClient.post<MechanicSchedule>('/api/mechanic/availability', { schedule });
 };
 
 // User profile-related functions
-export const getUserProfile = async (token: string) => {
+export const getUserProfile = async (token: string): Promise<UserProfile> => {
     setAuthToken(token);
-    return httpClient.get('/api/user');
+    return httpClient.get<UserProfile>('/api/user');
 };
 
-export const updateUserProfile = async (token: string, data: { name: string; phone?: string }) => {
+export const updateUserProfile = async (token: string, data: { name: string; phone?: string }): Promise<UserProfile> => {
     setAuthToken(token);
-    return httpClient.put('/api/user', data);
+    return httpClient.put<UserProfile>('/api/user', data);
 };
 
 export const seedAvailability = async (token: string): Promise<{ created: number; updated: number; skipped: number; }> => {
     setAuthToken(token);
-    return httpClient.post('/api/availability/seed', {});
+    return httpClient.post<{ created: number; updated: number; skipped: number; }>('/api/availability/seed', {});
 };
 
 export default httpClient;
