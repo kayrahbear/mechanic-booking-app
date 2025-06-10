@@ -93,7 +93,7 @@ async def _generate_availability_for_day(db, day: date, service_id: Optional[str
     
     # If service_id is provided, filter mechanics who can perform this service
     if service_id:
-        mechanics_query = mechanics_query.where("specialties", "array-contains", service_id)
+        mechanics_query = mechanics_query.where("specialties", "array_contains", service_id)
     
     mechanics = []
     for doc in mechanics_query.stream():

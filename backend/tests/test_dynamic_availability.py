@@ -140,7 +140,7 @@ class TestDynamicAvailability:
         assert all(slot.mechanic_id == "mechanic_1" for slot in slots)
         
         # Verify the service filter was applied
-        mock_where_active.where.assert_called_with("specialties", "array-contains", service_id)
+        mock_where_active.where.assert_called_with("specialties", "array_contains", service_id)
 
     @pytest.mark.asyncio
     async def test_generate_availability_for_weekend(self, mock_db, sample_mechanic):
