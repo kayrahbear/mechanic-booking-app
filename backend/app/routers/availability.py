@@ -13,33 +13,41 @@ router = APIRouter(prefix="/availability", tags=["availability"])
 
 @router.get("", response_model=list[Slot])
 async def get_availability(
-    date: date = Query(..., description="Date to get availability for (YYYY-MM-DD)"),
+    date: Optional[date] = Query(None, description="Date to get availability for (YYYY-MM-DD)"),
+    day: Optional[date] = Query(None, description="Date to get availability for (YYYY-MM-DD) - legacy parameter"),
     service_id: Optional[str] = Query(None, description="Filter by service ID to show only mechanics who can perform this service")
 ):
     """
     Get availability for a specific day. This endpoint now generates availability
     dynamically based on mechanic schedules and existing bookings, with optional caching.
     Supports filtering by service_id to show only relevant mechanics.
+    
+    Accepts either 'date' or 'day' parameter for backward compatibility.
     """
+    # Handle backward compatibility - accept either 'date' or 'day' parameter
+    target_date = date or day
+    if not target_date:
+        raise HTTPException(400, "Either 'date' or 'day' parameter is required")
+    
     db = get_client()
     if not db:
         return []
 
     # Generate cache key that includes service_id for service-specific caching
-    cache_key = f"{date.isoformat()}"
+    cache_key = f"{target_date.isoformat()}"
     if service_id:
         cache_key += f"_service_{service_id}"
 
     # First, try to get cached availability
-    cached_availability = await _get_cached_availability(db, date, service_id)
+    cached_availability = await _get_cached_availability(db, target_date, service_id)
     if cached_availability:
         return cached_availability
     
     # Generate availability dynamically
-    availability = await _generate_availability_for_day(db, date, service_id)
+    availability = await _generate_availability_for_day(db, target_date, service_id)
     
     # Cache the generated availability
-    await _cache_availability(db, date, availability, service_id)
+    await _cache_availability(db, target_date, availability, service_id)
     
     return availability
 
