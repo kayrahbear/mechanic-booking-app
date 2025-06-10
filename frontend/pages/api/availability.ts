@@ -16,9 +16,8 @@ export default async function handler(
         // Extract query parameters
         const { date, service_id } = req.query;
 
-        // The backend expects 'day' parameter, but frontend sends 'date'
-        // Build the backend URL with the correct parameter name
-        const backendUrl = `${apiBase}/availability?day=${date}${service_id ? `&service_id=${service_id}` : ''}`;
+        // Build the backend URL with the correct parameter names
+        const backendUrl = `${apiBase}/availability?date=${date}${service_id ? `&service_id=${service_id}` : ''}`;
 
         console.log(`[API Route /api/availability] Calling backend URL: ${backendUrl}`);
 

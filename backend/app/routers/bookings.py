@@ -161,6 +161,7 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     """
     Execute the booking creation process within a transaction.
     
+    Now uses dynamic availability validation instead of pre-seeded availability documents.
     Retries on transient Firestore errors using exponential backoff.
     """
     # Get service to calculate end time
@@ -172,23 +173,30 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     service_data = service_doc.to_dict()
     service_duration = service_data.get("minutes", 30)
     
-    # Find the mechanic user via Firebase Auth (users with mechanic custom claim)
-    try:
-        # List users is limited to 1000 by default, but we only expect a few users
-        # and only one mechanic as per the requirements
-        mechanic_uid = None
-        for user in auth.list_users().iterate_all():
-            if user.custom_claims and user.custom_claims.get('mechanic', False):
-                mechanic_uid = user.uid
-                # Use the mechanic's UID directly
-                payload.mechanic_id = mechanic_uid
-                logger.info(f"Automatically assigned mechanic ID: {mechanic_uid}")
-                break
-                
-        if not mechanic_uid:
-            logger.warning("No mechanic user found in Firebase Auth")
-    except Exception as e:
-        logger.error(f"Error finding mechanic user: {str(e)}")
+    # Validate availability dynamically before attempting booking
+    booking_date = payload.slot_start.date()
+    booking_time = payload.slot_start.strftime("%H:%M")
+    
+    # Import the availability generation function
+    from .availability import _generate_availability_for_day
+    
+    # Generate current availability for the requested date and service
+    available_slots = await _generate_availability_for_day(db, booking_date, payload.service_id)
+    
+    # Check if the requested slot is available
+    requested_slot = None
+    for slot in available_slots:
+        slot_time = datetime.fromisoformat(slot.start.replace('Z', '')).strftime("%H:%M")
+        if slot_time == booking_time and slot.is_free:
+            requested_slot = slot
+            break
+    
+    if not requested_slot:
+        raise SlotUnavailableError(f"Time slot {booking_time} is not available for the requested service")
+    
+    # Use the mechanic from the available slot
+    if requested_slot.mechanic_id:
+        payload.mechanic_id = requested_slot.mechanic_id
     
     # Calculate end time
     slot_end = payload.slot_start + timedelta(minutes=service_duration)
@@ -205,34 +213,53 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
     booking_data["service_price"] = service_data.get("price", 0)
     
     booking_ref = db.collection("bookings").document()
-    slot_doc = db.collection("availability").document(payload.slot_start.date().isoformat())
 
     # The transaction function that will be executed atomically
     @firestore.transactional
     def txn(transaction: firestore.Transaction):
-        # Read the availability document
-        slot_snapshot = slot_doc.get(transaction=transaction)
-        if not slot_snapshot.exists:
-            raise DayNotPublishedError("Availability not published for the requested day")
-
-        # Get the slots map from the availability document
-        availability_data = slot_snapshot.to_dict()
-        slots = availability_data.get("slots", {})
-        time_key = payload.slot_start.strftime("%H:%M")
+        # Double-check availability within the transaction by checking existing bookings
+        day_start = datetime.combine(booking_date, datetime.min.time())
+        day_end = datetime.combine(booking_date, datetime.max.time())
         
-        # Check if the slot is free
-        if slots.get(time_key) != SlotStatus.FREE.value:
-            raise SlotUnavailableError(f"Time slot {time_key} is not available")
-
-        # Mark slot as booked
-        slots[time_key] = SlotStatus.BOOKED.value
-        transaction.update(slot_doc, {
-            "slots": slots,
-            "updated_at": firestore.SERVER_TIMESTAMP
-        })
+        # Check for conflicting bookings at the exact same time
+        existing_bookings = db.collection("bookings").where(
+            "slot_start", "==", payload.slot_start
+        ).where(
+            "status", "in", ["pending", "confirmed"]
+        ).stream()
+        
+        for existing_booking in existing_bookings:
+            existing_data = existing_booking.to_dict()
+            # If there's a booking with the same mechanic at the same time, it's a conflict
+            if existing_data.get("mechanic_id") == payload.mechanic_id:
+                raise SlotUnavailableError(f"Time slot {booking_time} is already booked")
 
         # Write booking record
         transaction.set(booking_ref, booking_data)
+        
+        # Invalidate any cached availability for this date by updating/creating availability doc
+        slot_doc = db.collection("availability").document(booking_date.isoformat())
+        slot_snapshot = slot_doc.get(transaction=transaction)
+        
+        if slot_snapshot.exists:
+            # Update existing availability cache to mark slot as booked
+            availability_data = slot_snapshot.to_dict()
+            slots = availability_data.get("slots", {})
+            slots[booking_time] = SlotStatus.BOOKED.value
+            transaction.update(slot_doc, {
+                "slots": slots,
+                "updated_at": firestore.SERVER_TIMESTAMP
+            })
+        else:
+            # Create a minimal availability document to track this booking
+            transaction.set(slot_doc, {
+                "day": booking_date.isoformat(),
+                "slots": {booking_time: SlotStatus.BOOKED.value},
+                "mechanics": {payload.mechanic_id: True} if payload.mechanic_id else {},
+                "generated_dynamically": True,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            })
         
         # Return success indicator
         return True

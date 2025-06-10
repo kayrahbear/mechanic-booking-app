@@ -10,10 +10,16 @@ const config = {
     theme: {
         extend: {
             colors: {
-                primary: '#0F4C81',
-                'primary-dark': '#0a3a68',
-                accent: '#FFA629',
-                'accent-dark': '#e08c00',
+                primary: '#3f51b5',
+                'primary-dark': '#303f9f',
+                'primary-light': '#c5cae9',
+                accent: '#03a9f4',
+                text: {
+                    primary: '#212121',
+                    secondary: '#757575',
+                    icons: '#FFFFFF',
+                },
+                divider: '#BDBDBD',
                 neutral: {
                     50: '#F9FAFB',
                     100: '#F4F6F8',

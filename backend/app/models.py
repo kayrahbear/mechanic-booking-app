@@ -24,8 +24,8 @@ class SlotStatus(str, Enum):
     BLOCKED = "blocked"
 
 class Slot(BaseModel):
-    start: datetime
-    end: datetime
+    start: str  # ISO datetime string for API compatibility
+    end: str    # ISO datetime string for API compatibility
     is_free: bool = True
     mechanic_id: Optional[str] = None
 
