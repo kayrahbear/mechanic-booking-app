@@ -17,7 +17,9 @@ export interface AvailabilityResponse {
 
 export interface BackendSlot {
     start: string;
+    end: string;
     is_free: boolean;
+    mechanic_id?: string;
 }
 
 export interface UserProfile {
@@ -51,11 +53,9 @@ export const getAvailability = async (date: string): Promise<AvailabilityRespons
 
 // Legacy function for backward compatibility
 export const fetchAvailableSlots = async (date: string, service_id?: string): Promise<AvailabilityResponse> => {
-    // Build query parameters
+    // Build query parameters - no longer passing service_id as there's only one mechanic who can perform all services
     const params: Record<string, string> = { date };
-    if (service_id) {
-        params.service_id = service_id;
-    }
+    // Removed service_id parameter as it's no longer needed for filtering
 
     // Determine environment (browser vs. Node / SSR)
     const isBrowser = typeof window !== 'undefined';
@@ -73,26 +73,36 @@ export const fetchAvailableSlots = async (date: string, service_id?: string): Pr
         }
         // Backend expects the query parameter to be named "day" not "date"
         const backendParams: Record<string, string> = { day: date };
-        if (service_id) {
-            backendParams.service_id = service_id;
-        }
+        // Removed service_id parameter as it's no longer needed for filtering
         data = await httpClient.get<BackendSlot[] | AvailabilityResponse>(`${backendBase}/availability`, { params: backendParams });
     }
 
-    // If backend returned the raw slot list, convert it to the shape expected by the UI
-    if (Array.isArray(data)) {
-        const slots: Record<string, string> = {};
-        data.forEach((slot: BackendSlot) => {
-            // Extract the HH:MM part of the timestamp **without** converting to UTC. This prevents
-            // accidental timezone shifts that would mis-align the slot time between frontend and
-            // backend (e.g. 08:00 → 13:00).
-            if (typeof slot.start === 'string' && slot.start.includes('T')) {
-                const timeKey = slot.start.split('T')[1].substring(0, 5); // "HH:MM"
-                slots[timeKey] = slot.is_free ? 'free' : 'booked';
-            }
-        });
-        return { date, slots };
-    }
+    console.log("fetchAvailableSlots received data:", typeof data, Array.isArray(data) ? "array" : "object");
+
+// If backend returned the raw slot list, convert it to the shape expected by the UI
+if (Array.isArray(data)) {
+    console.log("Converting array data to slots object. Sample item:", data.length > 0 ? JSON.stringify(data[0]) : "No items");
+    console.log("Total items in array:", data.length);
+    
+    const slots: Record<string, string> = {};
+    data.forEach((slot: any) => {
+        // Extract the HH:MM part of the timestamp **without** converting to UTC. This prevents
+        // accidental timezone shifts that would mis-align the slot time between frontend and
+        // backend (e.g. 08:00 → 13:00).
+        if (typeof slot.start === 'string' && slot.start.includes('T')) {
+            const timeKey = slot.start.split('T')[1].substring(0, 5); // "HH:MM"
+            slots[timeKey] = slot.is_free ? 'free' : 'booked';
+            console.log(`Added slot: ${timeKey} = ${slot.is_free ? 'free' : 'booked'}`);
+        } else {
+            console.log("Invalid slot format:", slot);
+        }
+    });
+    
+    console.log("Converted slots object:", Object.keys(slots).length, "slots");
+    const result = { date, slots };
+    console.log("Final result:", result);
+    return result;
+}
 
     // Otherwise assume the data is already in the desired shape
     return data as AvailabilityResponse;

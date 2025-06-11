@@ -96,12 +96,10 @@ async def _get_cached_availability(db, day: date, service_id: Optional[str] = No
 
 async def _generate_availability_for_day(db, day: date, service_id: Optional[str] = None) -> list[Slot]:
     """Generate availability for a day based on mechanic schedules and existing bookings."""
-    # Get active mechanics, optionally filtered by service specialties
+    # Get active mechanics - no longer filtering by specialties as there's only one mechanic
     mechanics_query = db.collection("mechanics").where("active", "==", True)
     
-    # If service_id is provided, filter mechanics who can perform this service
-    if service_id:
-        mechanics_query = mechanics_query.where("specialties", "array_contains", service_id)
+    # Removed filtering by service_id as all services can be performed by the single mechanic
     
     mechanics = []
     for doc in mechanics_query.stream():

@@ -14,10 +14,11 @@ export default async function handler(
         const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
         // Extract query parameters
-        const { date, service_id } = req.query;
+        const { date } = req.query;
 
         // Build the backend URL with the correct parameter names
-        const backendUrl = `${apiBase}/availability?date=${date}${service_id ? `&service_id=${service_id}` : ''}`;
+        // Removed service_id parameter as it's no longer needed for filtering
+        const backendUrl = `${apiBase}/availability?date=${date}`;
 
         console.log(`[API Route /api/availability] Calling backend URL: ${backendUrl}`);
 
@@ -50,6 +51,9 @@ export default async function handler(
 
         // Get the response data
         const data = await response.json();
+
+        // Log the response data for debugging
+        console.log(`[API Route /api/availability] Backend response:`, JSON.stringify(data).substring(0, 200) + "...");
 
         // Return the result
         return res.status(response.status).json(data);

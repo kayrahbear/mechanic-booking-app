@@ -83,12 +83,12 @@ for service in service_data:
     batch.set(service_ref, service)
     print(f"Added service: {service['name']} (ID: {service_ref.id})")
 
-# 2. Create Mechanics
+# 2. Create Mechanic (single mechanic for the business)
 mechanic_data = [
     {
         "name": "John Smith",
         "email": "john.smith@example.com",
-        "specialties": [], # Will be filled with service IDs later
+        # Removed specialties field as there's only one mechanic who can perform all services
         "schedule": {
             "monday": {"start": "08:00", "end": "17:00"},
             "tuesday": {"start": "08:00", "end": "17:00"},
@@ -96,23 +96,6 @@ mechanic_data = [
             "thursday": {"start": "08:00", "end": "17:00"},
             "friday": {"start": "08:00", "end": "17:00"},
             "saturday": None,
-            "sunday": None
-        },
-        "active": True,
-        "created_at": firestore.SERVER_TIMESTAMP,
-        "updated_at": firestore.SERVER_TIMESTAMP
-    },
-    {
-        "name": "Maria Garcia",
-        "email": "maria.garcia@example.com",
-        "specialties": [], # Will be filled with service IDs later
-        "schedule": {
-            "monday": {"start": "10:00", "end": "19:00"},
-            "tuesday": {"start": "10:00", "end": "19:00"},
-            "wednesday": {"start": "10:00", "end": "19:00"},
-            "thursday": {"start": "10:00", "end": "19:00"},
-            "friday": {"start": "10:00", "end": "19:00"},
-            "saturday": {"start": "09:00", "end": "14:00"},
             "sunday": None
         },
         "active": True,
@@ -209,4 +192,4 @@ for user in user_data:
 # Commit all changes
 print("\nCommitting all changes to Firestore...")
 batch.commit()
-print("Sample data initialization complete!") 
+print("Sample data initialization complete!")

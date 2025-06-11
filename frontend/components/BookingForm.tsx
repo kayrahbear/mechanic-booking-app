@@ -37,28 +37,34 @@ export default function BookingForm({
 
     // To avoid missing dependency warning, memoise `loadAvailableSlots`.
 
-    const loadAvailableSlots = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            setError('');
-            const data = await fetchAvailableSlots(selectedDate, selectedService);
+const loadAvailableSlots = useCallback(async () => {
+    try {
+        setIsLoading(true);
+        setError('');
+        // Still passing selectedService for backward compatibility, but it won't be used by the backend
+        // as there's only one mechanic who can perform all services
+        const data = await fetchAvailableSlots(selectedDate, selectedService);
 
-            // Transform the slots object to an array
-            const slotsArray = Object.entries(data.slots || {}).map(([time, status]) => ({
-                time,
-                status: status as 'free' | 'booked' | 'blocked'
-            }));
+        console.log("BookingForm received data:", data);
 
-            setAvailableSlots(slotsArray);
-            setSelectedTime(''); // Reset selected time when slots change
-        } catch (err) {
-            console.error('Error loading available slots:', err);
-            setError('Failed to load available time slots');
-            setAvailableSlots([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [selectedDate, selectedService]);
+        // Transform the slots object to an array
+        const slotsArray = Object.entries(data.slots || {}).map(([time, status]) => ({
+            time,
+            status: status as 'free' | 'booked' | 'blocked'
+        }));
+
+        console.log("BookingForm transformed slots:", slotsArray);
+
+        setAvailableSlots(slotsArray);
+        setSelectedTime(''); // Reset selected time when slots change
+    } catch (err) {
+        console.error('Error loading available slots:', err);
+        setError('Failed to load available time slots');
+        setAvailableSlots([]);
+    } finally {
+        setIsLoading(false);
+    }
+}, [selectedDate, selectedService]);
 
     // Fetch available slots when date or service changes
     useEffect(() => {

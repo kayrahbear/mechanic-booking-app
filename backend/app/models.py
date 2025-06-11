@@ -84,7 +84,7 @@ class Mechanic(BaseModel):
     id: str
     name: str
     email: EmailStr
-    specialties: List[str] = []
+    # Removed specialties field as there will only be a single mechanic who can perform all services
     schedule: MechanicSchedule
     active: bool = True
     created_at: datetime = Field(default_factory=datetime.now)
