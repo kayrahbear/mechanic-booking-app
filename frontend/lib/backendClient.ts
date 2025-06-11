@@ -5,7 +5,14 @@
  * for calls from the frontend Cloud Run service to the backend Cloud Run service.
  */
 
-import { GoogleAuth } from 'google-auth-library';
+// Define interfaces for the GoogleAuth library
+interface GoogleAuthClient {
+    getAccessToken(): Promise<{ token?: string | null }>;
+}
+
+interface GoogleAuth {
+    getIdTokenClient(audience: string): Promise<GoogleAuthClient>;
+}
 
 interface BackendClientError extends Error {
     status?: number;
@@ -28,12 +35,33 @@ class BackendError extends Error implements BackendClientError {
 const DEFAULT_TIMEOUT = 10000;
 
 class BackendClient {
-    private auth: GoogleAuth;
+    private auth: GoogleAuth | null = null;
     private baseURL: string;
 
     constructor(baseURL: string) {
         this.baseURL = baseURL;
-        this.auth = new GoogleAuth();
+    }
+
+    /**
+     * Lazily initialize GoogleAuth when needed
+     */
+    private async getGoogleAuth(): Promise<GoogleAuth | null> {
+        if (this.auth) {
+            return this.auth;
+        }
+
+        if (typeof window === 'undefined') {
+            try {
+                const { GoogleAuth } = await import('google-auth-library');
+                this.auth = new GoogleAuth();
+                return this.auth;
+            } catch (error) {
+                console.warn('google-auth-library not available:', error);
+                return null;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -44,15 +72,23 @@ class BackendClient {
             console.log(`[BackendClient] Getting identity token for audience: ${this.baseURL}`);
             
             // First try using GoogleAuth library
-            try {
-                const client = await this.auth.getIdTokenClient(this.baseURL);
-                const token = await client.getAccessToken();
-                if (token.token) {
-                    console.log(`[BackendClient] Successfully obtained token via GoogleAuth`);
-                    return token.token;
+            if (this.auth) {
+                try {
+                    const client = await this.auth.getIdTokenClient(this.baseURL);
+                    const token = await client.getAccessToken();
+                    if (token.token) {
+                        console.log(`[BackendClient] Successfully obtained token via GoogleAuth`);
+                        return token.token;
+                    }
+                } catch (authError) {
+                    console.warn(`[BackendClient] GoogleAuth failed, trying metadata server:`, authError);
                 }
-            } catch (authError) {
-                console.warn(`[BackendClient] GoogleAuth failed, trying metadata server:`, authError);
+            } else {
+                // Try to initialize auth if not already done
+                this.auth = await this.getGoogleAuth();
+                if (this.auth) {
+                    return this.getIdentityToken(); // Retry with initialized auth
+                }
             }
 
             // Fallback to metadata server (when running in Cloud Run)
