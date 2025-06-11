@@ -233,14 +233,16 @@ async def create_booking_with_transaction(db, payload: BookingCreate) -> Booking
             # If there's a booking with the same mechanic at the same time, it's a conflict
             if existing_data.get("mechanic_id") == payload.mechanic_id:
                 raise SlotUnavailableError(f"Time slot {booking_time} is already booked")
-
-        # Write booking record
-        transaction.set(booking_ref, booking_data)
         
-        # Invalidate any cached availability for this date by updating/creating availability doc
+        # Read the availability document BEFORE any writes
         slot_doc = db.collection("availability").document(booking_date.isoformat())
         slot_snapshot = slot_doc.get(transaction=transaction)
         
+        # Now perform all writes after all reads are complete
+        # Write booking record
+        transaction.set(booking_ref, booking_data)
+        
+        # Update or create availability document
         if slot_snapshot.exists:
             # Update existing availability cache to mark slot as booked
             availability_data = slot_snapshot.to_dict()

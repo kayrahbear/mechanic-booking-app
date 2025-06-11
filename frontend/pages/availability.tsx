@@ -3,6 +3,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { fetchAvailableSlots, fetchServices } from '../lib/api';
 
+// Helper function to convert 24-hour time to 12-hour time with AM/PM
+function formatTo12Hour(time24: string): string {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
 interface Service {
     id: string;
     name: string;
@@ -96,6 +104,11 @@ const AvailabilityPage = ({
                 groupedSlots.evening.push({ time, status });
             }
         });
+        
+        // Sort each group chronologically
+        groupedSlots.morning.sort((a, b) => a.time.localeCompare(b.time));
+        groupedSlots.afternoon.sort((a, b) => a.time.localeCompare(b.time));
+        groupedSlots.evening.sort((a, b) => a.time.localeCompare(b.time));
     }
 
     const selectedServiceName = services.find(s => s.id === selectedService)?.name || '';
@@ -166,11 +179,11 @@ const AvailabilityPage = ({
                                                 href={`/book?service_id=${selectedService}&date=${selectedDate}&time=${slot.time}`}
                                                 className="block w-full py-2 px-3 bg-green-100 border border-green-300 text-green-800 rounded-md hover:bg-green-200"
                                             >
-                                                {slot.time}
+                                                {formatTo12Hour(slot.time)}
                                             </Link>
                                         ) : (
                                             <div className="py-2 px-3 bg-neutral-100 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 rounded-md">
-                                                {slot.time}
+                                                {formatTo12Hour(slot.time)}
                                             </div>
                                         )}
                                     </div>

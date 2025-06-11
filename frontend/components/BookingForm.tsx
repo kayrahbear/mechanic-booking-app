@@ -15,6 +15,14 @@ interface BookingFormProps {
     initialDate?: string;
 }
 
+// Helper function to convert 24-hour time to 12-hour time with AM/PM
+function formatTo12Hour(time24: string): string {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
 export default function BookingForm({
     services,
     initialServiceId,
@@ -52,6 +60,12 @@ const loadAvailableSlots = useCallback(async () => {
             time,
             status: status as 'free' | 'booked' | 'blocked'
         }));
+
+        // Sort the slots chronologically
+        slotsArray.sort((a, b) => {
+            // Compare times in HH:MM format
+            return a.time.localeCompare(b.time);
+        });
 
         console.log("BookingForm transformed slots:", slotsArray);
 
@@ -96,7 +110,8 @@ const loadAvailableSlots = useCallback(async () => {
 
                 // Only update if we got valid data and fields are still empty
                 if (profile) {
-                    if (profile.name && !customerName) {
+                    // Only set the name if it's currently empty (to avoid overwriting user input)
+                    if (profile.name && customerName === '') {
                         setCustomerName(profile.name);
                     }
 
@@ -113,7 +128,7 @@ const loadAvailableSlots = useCallback(async () => {
         }
 
         loadUserProfile();
-    }, [user, customerName]);
+    }, [user]); // Remove customerName from dependencies
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -250,7 +265,7 @@ const loadAvailableSlots = useCallback(async () => {
                                                 : 'bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-600 text-neutral-800 dark:text-neutral-200'
                                                 }`}
                                         >
-                                            {slot.time}
+                                            {formatTo12Hour(slot.time)}
                                         </button>
                                     ))}
                             </div>
