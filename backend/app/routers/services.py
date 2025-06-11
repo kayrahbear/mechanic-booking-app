@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from ..models import Service
 from ..firestore import get_client
-from ..auth import get_mechanic_user, User
+from ..auth import get_mechanic_user, get_current_user, User
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 import logging # Import logging
 
 router = APIRouter(prefix="/services", tags=["services"])
@@ -23,7 +24,7 @@ class ServiceUpdate(BaseModel):
     active: bool = True
 
 @router.get("", response_model=list[Service])
-async def list_services():
+async def list_services(current_user: Optional[User] = Depends(get_current_user)):
     logger.info("[/services] Endpoint called") # Log entry
     db = get_client()
     if not db:

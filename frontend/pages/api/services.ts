@@ -1,24 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import httpClient, { HttpClientError } from '../../lib/httpClient';
+import backendClient, { BackendClientError } from '../../lib/backendClient';
 
-// Read the backend URL from environment variables
-// Ensure this is set in your deployment environment (e.g., Cloud Run service)
-const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-
-console.log(`[API Route /api/services] Using backend API URL: ${apiUrl}`); // Log the URL being used
+console.log(`[API Route /api/services] Using backend client for service-to-service authentication`);
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
     console.log(`[API Route /api/services] Handler invoked with method: ${req.method}`); // Log entry
-
-    // Extract authorization header
-    const authHeader = req.headers.authorization;
-    const headers: Record<string, string> = {};
-    if (authHeader) {
-        headers.Authorization = authHeader;
-    }
 
     try {
         switch (req.method) {
@@ -27,13 +16,12 @@ export default async function handler(
                 
                 // Check if requesting all services (including inactive)
                 const includeInactive = req.query.all === 'true';
-                const endpoint = includeInactive ? `${apiUrl}/services/all` : `${apiUrl}/services`;
+                const endpoint = includeInactive ? '/services/all' : '/services';
                 
                 console.log(`[API Route /api/services] Attempting to fetch from backend: ${endpoint}`);
                 
-                const data = await httpClient.get(endpoint, {
-                    timeout: 5000,
-                    headers
+                const data = await backendClient.get(endpoint, {
+                    timeout: 5000
                 });
 
                 console.log(`[API Route /api/services] Backend response successful`);
@@ -44,9 +32,8 @@ export default async function handler(
             case 'POST':
                 console.log(`[API Route /api/services] POST request - creating service`);
                 
-                const createData = await httpClient.post(`${apiUrl}/services`, req.body, {
-                    timeout: 5000,
-                    headers
+                const createData = await backendClient.post('/services', req.body, {
+                    timeout: 5000
                 });
 
                 console.log(`[API Route /api/services] Service created successfully`);
@@ -60,9 +47,8 @@ export default async function handler(
                     return res.status(400).json({ error: 'Service ID is required for updates' });
                 }
 
-                const updateData = await httpClient.put(`${apiUrl}/services/${serviceId}`, req.body, {
-                    timeout: 5000,
-                    headers
+                const updateData = await backendClient.put(`/services/${serviceId}`, req.body, {
+                    timeout: 5000
                 });
 
                 console.log(`[API Route /api/services] Service updated successfully`);
@@ -76,9 +62,8 @@ export default async function handler(
                     return res.status(400).json({ error: 'Service ID is required for deletion' });
                 }
 
-                await httpClient.delete(`${apiUrl}/services/${deleteServiceId}`, {
-                    timeout: 5000,
-                    headers
+                await backendClient.delete(`/services/${deleteServiceId}`, {
+                    timeout: 5000
                 });
 
                 console.log(`[API Route /api/services] Service deleted successfully`);
@@ -93,16 +78,16 @@ export default async function handler(
     } catch (error: unknown) {
         console.error(`[API Route /api/services] Error with ${req.method} request:`, error);
 
-        if ((error as HttpClientError).status) {
-            const httpError = error as HttpClientError;
-            console.error('[API Route /api/services] HTTP error details:', {
-                message: httpError.message,
-                status: httpError.status,
-                data: httpError.data
+        if ((error as BackendClientError).status) {
+            const backendError = error as BackendClientError;
+            console.error('[API Route /api/services] Backend error details:', {
+                message: backendError.message,
+                status: backendError.status,
+                data: backendError.data
             });
             // Forward backend error status and detail if possible
-            return res.status(httpError.status || 500).json({
-                error: httpError.data || `Failed to ${req.method?.toLowerCase() || 'process'} service`
+            return res.status(backendError.status || 500).json({
+                error: backendError.data || `Failed to ${req.method?.toLowerCase() || 'process'} service`
             });
         } else {
             console.error('[API Route /api/services] Network or other error:', error);

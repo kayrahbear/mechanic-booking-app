@@ -7,6 +7,7 @@ from typing import Optional
 from pydantic import BaseModel
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+import logging
 
 # Ensure Firebase Admin SDK is initialized exactly once.
 # This is required before calling auth.verify_id_token.
@@ -36,7 +37,7 @@ SCHEDULER_UID = "cloud-scheduler"
 
 async def get_current_user(authorization: Optional[str] = Header(None)) -> Optional[User]:
     """
-    Get the current user from the Firebase ID token in the Authorization header.
+    Get the current user from the Firebase ID token or Google Cloud identity token in the Authorization header.
     Returns None for unauthenticated requests to endpoints that allow anonymous access.
     Raises HTTPException for invalid tokens.
     """
@@ -52,11 +53,11 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Optio
     
     token = authorization.replace("Bearer ", "")
     
+    # First, try Firebase Auth token verification
     try:
-        # Verify the ID token
         decoded_token = auth.verify_id_token(token)
         
-        # Create user object
+        # Create user object from Firebase token
         user = User(
             uid=decoded_token["uid"],
             email=decoded_token.get("email", ""),
@@ -71,17 +72,42 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Optio
         elif user.is_mechanic:
             user.role = "mechanic"
         
+        logging.info(f"Authenticated Firebase user: {user.email} (role: {user.role})")
         return user
         
-    except (InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError) as e:
-        # The token is not a valid Firebase Auth token. This may happen when the
-        # request comes from another Cloud Run service using an IAM identity
-        # token. Treat this as an anonymous call so public endpoints can still
-        # succeed, but return nothing so endpoints that *require* auth will
-        # reject via get_admin_user or explicit checks.
-        import logging
-        logging.info("Non-Firebase identity token supplied; treating as anonymous: %s", e)
-        return None
+    except (InvalidIdTokenError, ExpiredIdTokenError, RevokedIdTokenError):
+        # Not a valid Firebase token, try Google Cloud identity token
+        logging.info("Token is not a Firebase token, attempting Google Cloud identity token verification")
+        
+        try:
+            # Verify Google Cloud identity token
+            info = id_token.verify_oauth2_token(token, google_requests.Request())
+            
+            # Check if this is from our frontend service account
+            email = info.get("email", "")
+            
+            # Allow requests from our frontend service account
+            if email and ("frontend-sa@" in email or "compute@developer.gserviceaccount.com" in email):
+                # Create a system user for service-to-service calls
+                user = User(
+                    uid="frontend-service",
+                    email=email,
+                    name="Frontend Service Account",
+                    role="system",
+                    is_admin=False,
+                    is_mechanic=False
+                )
+                
+                logging.info(f"Authenticated service account: {email}")
+                return user
+            else:
+                logging.warning(f"Unrecognized service account email: {email}")
+                return None
+                
+        except Exception as e:
+            logging.info(f"Token verification failed for both Firebase and Google Cloud: {e}")
+            return None
+    
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -166,4 +192,4 @@ async def get_scheduler_or_mechanic_user(
             is_mechanic=False,
         )
 
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised") 
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised")

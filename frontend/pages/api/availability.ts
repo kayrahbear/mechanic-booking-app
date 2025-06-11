@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import backendClient, { BackendClientError } from '../../lib/backendClient';
 
 export default async function handler(
     req: NextApiRequest,
@@ -10,55 +11,39 @@ export default async function handler(
     }
 
     try {
-        // Get the backend API URL from environment variables
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
-
         // Extract query parameters
         const { date } = req.query;
 
-        // Build the backend URL with the correct parameter names
-        // Removed service_id parameter as it's no longer needed for filtering
-        const backendUrl = `${apiBase}/availability?date=${date}`;
+        // Build the endpoint with query parameters
+        const endpoint = `/availability?date=${date}`;
 
-        console.log(`[API Route /api/availability] Calling backend URL: ${backendUrl}`);
+        console.log(`[API Route /api/availability] Calling backend endpoint: ${endpoint}`);
 
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        };
-
-        // When running inside Cloud Run, obtain an identity token for the backend service
-        if (typeof window === 'undefined') {
-            try {
-                const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(apiBase)}&format=full`;
-                const tokenResp = await fetch(metadataURL, {
-                    headers: { 'Metadata-Flavor': 'Google' }
-                });
-
-                if (tokenResp.ok) {
-                    const token = await tokenResp.text();
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-            } catch (err) {
-                console.error('Failed to obtain identity token for backend call', err);
-            }
-        }
-
-        // Forward the request to the backend API
-        const response = await fetch(backendUrl, {
-            method: 'GET',
-            headers,
+        // Use the backend client which handles authentication automatically
+        const data = await backendClient.get(endpoint, {
+            timeout: 5000
         });
-
-        // Get the response data
-        const data = await response.json();
 
         // Log the response data for debugging
         console.log(`[API Route /api/availability] Backend response:`, JSON.stringify(data).substring(0, 200) + "...");
 
         // Return the result
-        return res.status(response.status).json(data);
+        return res.status(200).json(data);
     } catch (error: unknown) {
         console.error('Error fetching availability:', error);
+
+        if ((error as BackendClientError).status) {
+            const backendError = error as BackendClientError;
+            console.error('[API Route /api/availability] Backend error details:', {
+                message: backendError.message,
+                status: backendError.status,
+                data: backendError.data
+            });
+            return res.status(backendError.status || 500).json({
+                detail: backendError.data || 'Failed to fetch availability'
+            });
+        }
+
         return res.status(500).json({
             detail: error instanceof Error ? error.message : 'Failed to fetch availability'
         });
