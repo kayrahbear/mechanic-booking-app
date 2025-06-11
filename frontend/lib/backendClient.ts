@@ -37,16 +37,50 @@ class BackendClient {
     }
 
     /**
-     * Get an authenticated HTTP client for the backend service
+     * Get an identity token for the backend service
      */
-    private async getAuthenticatedClient() {
+    private async getIdentityToken(): Promise<string | null> {
         try {
-            // Get an ID token client for the backend service URL
-            const client = await this.auth.getIdTokenClient(this.baseURL);
-            return client;
+            console.log(`[BackendClient] Getting identity token for audience: ${this.baseURL}`);
+            
+            // First try using GoogleAuth library
+            try {
+                const client = await this.auth.getIdTokenClient(this.baseURL);
+                const token = await client.getAccessToken();
+                if (token.token) {
+                    console.log(`[BackendClient] Successfully obtained token via GoogleAuth`);
+                    return token.token;
+                }
+            } catch (authError) {
+                console.warn(`[BackendClient] GoogleAuth failed, trying metadata server:`, authError);
+            }
+
+            // Fallback to metadata server (when running in Cloud Run)
+            if (typeof window === 'undefined') {
+                try {
+                    const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(this.baseURL)}&format=full`;
+                    console.log(`[BackendClient] Fetching token from metadata server: ${metadataURL}`);
+                    
+                    const tokenResp = await fetch(metadataURL, {
+                        headers: { 'Metadata-Flavor': 'Google' }
+                    });
+
+                    if (tokenResp.ok) {
+                        const token = await tokenResp.text();
+                        console.log(`[BackendClient] Successfully obtained token via metadata server`);
+                        return token;
+                    } else {
+                        console.error(`[BackendClient] Metadata server returned status: ${tokenResp.status}`);
+                    }
+                } catch (metadataError) {
+                    console.error(`[BackendClient] Metadata server failed:`, metadataError);
+                }
+            }
+
+            return null;
         } catch (error) {
-            console.error('Failed to get authenticated client:', error);
-            throw new BackendError('Failed to authenticate with backend service');
+            console.error(`[BackendClient] Failed to get identity token:`, error);
+            return null;
         }
     }
 
@@ -64,58 +98,81 @@ class BackendClient {
         const { method = 'GET', body, timeout = DEFAULT_TIMEOUT } = options;
 
         try {
-            const client = await this.getAuthenticatedClient();
             const url = `${this.baseURL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-
             console.log(`[BackendClient] Making ${method} request to: ${url}`);
 
-            const requestOptions: {
-                method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-                timeout: number;
-                headers: Record<string, string>;
-                body?: string;
-            } = {
+            // Get identity token for authentication
+            const token = await this.getIdentityToken();
+
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+
+            // Add authorization header if we have a token
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                console.log(`[BackendClient] Added Authorization header with token`);
+            } else {
+                console.warn(`[BackendClient] No identity token available, making unauthenticated request`);
+            }
+
+            const requestOptions: RequestInit = {
                 method,
-                timeout,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
             };
 
             if (body && (method === 'POST' || method === 'PUT')) {
                 requestOptions.body = JSON.stringify(body);
             }
 
-            const response = await client.request({
-                url,
-                ...requestOptions,
-            });
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-            console.log(`[BackendClient] Request successful, status: ${response.status}`);
-            return response.data as T;
+            try {
+                const response = await fetch(url, {
+                    ...requestOptions,
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                console.log(`[BackendClient] Request completed with status: ${response.status}`);
+
+                // Check if the response has JSON content
+                const contentType = response.headers.get('content-type');
+                const isJson = contentType && contentType.includes('application/json');
+
+                // Parse response data based on content type
+                const data = isJson ? await response.json() : await response.text();
+
+                // If response is not ok, throw an error with status and data
+                if (!response.ok) {
+                    throw new BackendError(
+                        `Request failed with status ${response.status}`,
+                        response.status,
+                        data
+                    );
+                }
+
+                console.log(`[BackendClient] Request successful`);
+                return data as T;
+
+            } finally {
+                clearTimeout(timeoutId);
+            }
 
         } catch (error: unknown) {
             console.error(`[BackendClient] Request failed:`, error);
 
-            // Handle Google Auth library errors
-            if (error && typeof error === 'object' && 'response' in error) {
-                const gaxiosError = error as { response: { status: number; data: unknown } };
-                const status = gaxiosError.response.status;
-                const data = gaxiosError.response.data;
-                throw new BackendError(
-                    `Backend request failed with status ${status}`,
-                    status,
-                    data
-                );
+            // Handle fetch errors
+            if (error instanceof BackendError) {
+                throw error;
             }
 
             // Handle other errors
             const errorMessage = error instanceof Error ? error.message : 'Backend request failed';
-            throw new BackendError(
-                errorMessage,
-                undefined,
-                error
-            );
+            throw new BackendError(errorMessage, undefined, error);
         }
     }
 
@@ -150,6 +207,7 @@ class BackendClient {
 
 // Create a default instance using the backend URL from environment
 const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+console.log(`[BackendClient] Initializing with backend URL: ${backendUrl}`);
 const backendClient = new BackendClient(backendUrl);
 
 export default backendClient;
