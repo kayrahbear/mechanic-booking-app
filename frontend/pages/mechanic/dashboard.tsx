@@ -6,7 +6,36 @@ import { Booking, MechanicSchedule } from '../../lib/types';
 import MechanicAvailabilityManager from '../../components/MechanicAvailabilityManager';
 import PendingAppointmentsList from '../../components/PendingAppointmentsList';
 import UpcomingAppointmentsList from '../../components/UpcomingAppointmentsList';
+import ServiceManager from '../../components/ServiceManager';
 import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability, seedAvailability } from '../../lib/api';
+import { User } from 'firebase/auth';
+
+// Wrapper component to handle async token for ServiceManager
+function ServiceManagerWrapper({ user }: { user: User }) {
+    const [token, setToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        const getToken = async () => {
+            try {
+                const idToken = await user.getIdToken();
+                setToken(idToken);
+            } catch (error) {
+                console.error('Error getting token:', error);
+            }
+        };
+        getToken();
+    }, [user]);
+
+    if (!token) {
+        return (
+            <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    return <ServiceManager token={token} />;
+}
 
 export default function MechanicDashboard() {
     const { user, userRole } = useAuth();
@@ -16,7 +45,7 @@ export default function MechanicDashboard() {
     const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
     const [isProcessingBooking, setIsProcessingBooking] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability'>('pending');
+    const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability' | 'services'>('pending');
     const [mechanicSchedule, setMechanicSchedule] = useState<MechanicSchedule | null>(null);
     const [isSeedingAvailability, setIsSeedingAvailability] = useState(false);
 
@@ -182,6 +211,12 @@ export default function MechanicDashboard() {
                             >
                                 Manage Availability
                             </button>
+                            <button
+                                className={`py-2 px-4 font-medium ${activeTab === 'services' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                onClick={() => setActiveTab('services')}
+                            >
+                                Manage Services
+                            </button>
                         </div>
 
                         {activeTab === 'pending' && (
@@ -206,9 +241,13 @@ export default function MechanicDashboard() {
                                 isLoading={isUpdatingAvailability}
                             />
                         )}
+
+                        {activeTab === 'services' && user && (
+                            <ServiceManagerWrapper user={user} />
+                        )}
                     </>
                 )}
             </div>
         </ProtectedRoute>
     );
-} 
+}

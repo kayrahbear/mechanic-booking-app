@@ -8,6 +8,7 @@ export interface Service {
     minutes: number;
     description: string;
     price: number;
+    active?: boolean;
 }
 
 export interface AvailabilityResponse {
@@ -39,6 +40,30 @@ export const getServices = async (): Promise<Service[]> => {
     // Use the API proxy endpoint when in the browser
     const endpoint = typeof window !== 'undefined' ? '/api/services' : `${process.env.NEXT_PUBLIC_API_BASE}/services`;
     return httpClient.get<Service[]>(endpoint);
+};
+
+// Get all services including inactive ones (for mechanics/admins)
+export const getAllServices = async (token: string): Promise<Service[]> => {
+    setAuthToken(token);
+    return httpClient.get<Service[]>('/api/services?all=true');
+};
+
+// Create a new service
+export const createService = async (token: string, serviceData: Omit<Service, 'id'>): Promise<Service> => {
+    setAuthToken(token);
+    return httpClient.post<Service>('/api/services', serviceData);
+};
+
+// Update an existing service
+export const updateService = async (token: string, serviceId: string, serviceData: Omit<Service, 'id'>): Promise<Service> => {
+    setAuthToken(token);
+    return httpClient.put<Service>(`/api/services?id=${serviceId}`, serviceData);
+};
+
+// Delete a service (soft delete)
+export const deleteService = async (token: string, serviceId: string): Promise<{ message: string }> => {
+    setAuthToken(token);
+    return httpClient.delete<{ message: string }>(`/api/services?id=${serviceId}`);
 };
 
 // Legacy function for backward compatibility
