@@ -40,6 +40,19 @@ class BackendClient {
 
     constructor(baseURL: string) {
         this.baseURL = baseURL;
+        
+        // Initialize auth immediately for server-side usage
+        if (typeof window === 'undefined') {
+            // We need to use require here for immediate initialization
+            // This is specifically for server-side API routes that need immediate auth
+            try {
+                /* eslint-disable-next-line */
+                const { GoogleAuth } = require('google-auth-library');
+                this.auth = new GoogleAuth();
+            } catch (error) {
+                console.warn('google-auth-library not available:', error);
+            }
+        }
     }
 
     /**
