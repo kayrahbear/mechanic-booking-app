@@ -1,4 +1,5 @@
 import httpClient from './httpClient';
+import backendClient from './backendClient';
 import { Booking, MechanicSchedule } from './types';
 
 // Define interfaces for API responses
@@ -37,9 +38,14 @@ export const setAuthToken = (token: string | null) => {
 
 // Basic API endpoints
 export const getServices = async (): Promise<Service[]> => {
-    // Use the API proxy endpoint when in the browser
-    const endpoint = typeof window !== 'undefined' ? '/api/services' : `${process.env.NEXT_PUBLIC_API_BASE}/services`;
-    return httpClient.get<Service[]>(endpoint);
+    // Use the API proxy endpoint when in the browser, authenticated backend client on server
+    if (typeof window !== 'undefined') {
+        // Browser: use API proxy
+        return httpClient.get<Service[]>('/api/services');
+    } else {
+        // Server: use authenticated backend client
+        return backendClient.get<Service[]>('/services');
+    }
 };
 
 // Get all services including inactive ones (for mechanics/admins)
@@ -91,15 +97,9 @@ export const fetchAvailableSlots = async (date: string): Promise<AvailabilityRes
         // In the browser we can rely on the Next.js API route proxy
         data = await httpClient.get<BackendSlot[] | AvailabilityResponse>(`/api/availability`, { params });
     } else {
-        // On the server (getServerSideProps / API routes) we call the backend directly
-        const backendBase = process.env.NEXT_PUBLIC_API_BASE;
-        if (!backendBase) {
-            throw new Error('Missing NEXT_PUBLIC_API_BASE environment variable for server-side availability fetch');
-        }
-        // Backend expects the query parameter to be named "day" not "date"
-        const backendParams: Record<string, string> = { day: date };
-        // Removed service_id parameter as it's no longer needed for filtering
-        data = await httpClient.get<BackendSlot[] | AvailabilityResponse>(`${backendBase}/availability`, { params: backendParams });
+        // On the server (getServerSideProps / API routes) we use the authenticated backend client
+        // Backend expects the query parameter to be named "date"
+        data = await backendClient.get<BackendSlot[] | AvailabilityResponse>(`/availability?date=${date}`);
     }
 
     console.log("fetchAvailableSlots received data:", typeof data, Array.isArray(data) ? "array" : "object");

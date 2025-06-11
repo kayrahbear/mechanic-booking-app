@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import httpClient, { HttpClientError } from '../lib/httpClient';
+import backendClient, { BackendClientError } from '../lib/backendClient';
 
 interface Service {
     id: string;
@@ -10,13 +10,10 @@ interface Service {
     price: number;
 }
 
-// Use NEXT_PUBLIC_API_BASE from the environment variables instead of NEXT_PUBLIC_API_BASE
-const backendUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
-
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
-    console.log(`[getServerSideProps /services] Fetching from backend: ${backendUrl}/services`);
+    console.log(`[getServerSideProps /services] Fetching services using authenticated backend client`);
     try {
-        const services = await httpClient.get<Service[]>(`${backendUrl}/services`, {
+        const services = await backendClient.get<Service[]>('/services', {
             timeout: 5000
         });
         console.log(`[getServerSideProps /services] Received ${services.length} services from backend.`);
@@ -26,13 +23,13 @@ export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = a
             },
         };
     } catch (error) {
-        console.error('[getServerSideProps /services] Error fetching services directly from backend:', error);
-        if ((error as HttpClientError).status) {
-            const httpError = error as HttpClientError;
-            console.error('[getServerSideProps /services] HTTP error details:', {
-                message: httpError.message,
-                status: httpError.status,
-                data: httpError.data
+        console.error('[getServerSideProps /services] Error fetching services from backend:', error);
+        if ((error as BackendClientError).status) {
+            const backendError = error as BackendClientError;
+            console.error('[getServerSideProps /services] Backend error details:', {
+                message: backendError.message,
+                status: backendError.status,
+                data: backendError.data
             });
         }
         return {
