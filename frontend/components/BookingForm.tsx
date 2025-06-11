@@ -49,9 +49,9 @@ const loadAvailableSlots = useCallback(async () => {
     try {
         setIsLoading(true);
         setError('');
-        // Still passing selectedService for backward compatibility, but it won't be used by the backend
-        // as there's only one mechanic who can perform all services
-        const data = await fetchAvailableSlots(selectedDate, selectedService);
+        // No longer passing selectedService as the backend doesn't use it anymore
+        // (there's only one mechanic who can perform all services)
+        const data = await fetchAvailableSlots(selectedDate);
 
         console.log("BookingForm received data:", data);
 

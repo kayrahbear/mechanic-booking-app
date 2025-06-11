@@ -39,7 +39,7 @@ export const getServerSideProps: GetServerSideProps<AvailabilityPageProps> = asy
         // If both date and service_id are provided, fetch availability
         if (date && service_id) {
             try {
-                availabilityData = await fetchAvailableSlots(date as string, service_id as string);
+                availabilityData = await fetchAvailableSlots(date as string);
             } catch (error) {
                 console.error('Error fetching availability:', error);
             }
