@@ -25,22 +25,9 @@ export default async function handler(
             return res.status(401).json({ detail: 'Authorization header required' });
         }
 
-        // When running on the server (Cloud Run), obtain an identity token for backend service
-        if (typeof window === 'undefined') {
-            try {
-                const metadataURL = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(apiBase)}&format=full`;
-                const tokenResp = await fetch(metadataURL, {
-                    headers: { 'Metadata-Flavor': 'Google' }
-                });
-
-                if (tokenResp.ok) {
-                    const token = await tokenResp.text();
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-            } catch (err) {
-                console.error('Failed to obtain identity token for backend call', err);
-            }
-        }
+        // IMPORTANT: Do NOT override the user's Firebase auth token with the service account token
+        // The user's Firebase auth token is already in the headers['Authorization'] from the client request
+        // This ensures we're using the user's identity, not the service account
 
         // Build the request configuration
         const requestConfig: RequestInit = {
@@ -74,4 +61,4 @@ export default async function handler(
             detail: error instanceof Error ? error.message : 'Failed to process request'
         });
     }
-} 
+}
