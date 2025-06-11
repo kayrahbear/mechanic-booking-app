@@ -52,7 +52,7 @@ export const getAvailability = async (date: string): Promise<AvailabilityRespons
 };
 
 // Legacy function for backward compatibility
-export const fetchAvailableSlots = async (date: string, service_id?: string): Promise<AvailabilityResponse> => {
+export const fetchAvailableSlots = async (date: string): Promise<AvailabilityResponse> => {
     // Build query parameters - no longer passing service_id as there's only one mechanic who can perform all services
     const params: Record<string, string> = { date };
     // Removed service_id parameter as it's no longer needed for filtering
@@ -85,7 +85,7 @@ if (Array.isArray(data)) {
     console.log("Total items in array:", data.length);
     
     const slots: Record<string, string> = {};
-    data.forEach((slot: any) => {
+    data.forEach((slot: BackendSlot) => {
         // Extract the HH:MM part of the timestamp **without** converting to UTC. This prevents
         // accidental timezone shifts that would mis-align the slot time between frontend and
         // backend (e.g. 08:00 → 13:00).
