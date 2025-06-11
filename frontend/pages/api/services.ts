@@ -20,6 +20,35 @@ export default async function handler(
                 
                 console.log(`[API Route /api/services] Attempting to fetch from backend: ${endpoint}`);
                 
+                // If requesting all services and authorization header is present, forward it
+                if (includeInactive && req.headers.authorization) {
+                    console.log(`[API Route /api/services] Forwarding user's authorization token to backend`);
+                    
+                    // Get the backend API URL from environment variables
+                    const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+                    
+                    // Forward the Authorization header from the client request
+                    const headers: Record<string, string> = {
+                        'Content-Type': 'application/json',
+                        'Authorization': req.headers.authorization as string
+                    };
+                    
+                    // Make the request with the user's token
+                    const response = await fetch(`${apiBase}${endpoint}`, {
+                        method: 'GET',
+                        headers
+                    });
+                    
+                    // Get the response data
+                    const data = await response.json();
+                    
+                    console.log(`[API Route /api/services] Backend response with user token successful`);
+                    console.log(`[API Route /api/services] Backend response data length: ${Array.isArray(data) ? data.length : 'N/A'}`);
+                    
+                    return res.status(response.status).json(data);
+                }
+                
+                // Otherwise use service-to-service authentication
                 const data = await backendClient.get(endpoint, {
                     timeout: 5000
                 });
