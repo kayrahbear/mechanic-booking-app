@@ -87,7 +87,15 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Optio
             email = info.get("email", "")
             
             # Allow requests from our frontend service account
-            if email and ("frontend-sa@" in email or "compute@developer.gserviceaccount.com" in email):
+            # Check for various frontend service account patterns
+            is_frontend_sa = (
+                "frontend-sa@" in email or  # Original pattern
+                "frontend-service@" in email or  # Actual Terraform-generated pattern
+                "compute@developer.gserviceaccount.com" in email or  # Default compute SA
+                email.endswith(".iam.gserviceaccount.com")  # Any IAM service account from our project
+            )
+            
+            if email and is_frontend_sa:
                 # Create a system user for service-to-service calls
                 user = User(
                     uid="frontend-service",
