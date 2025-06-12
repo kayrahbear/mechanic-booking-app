@@ -1,21 +1,12 @@
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import backendClient, { BackendClientError } from '../lib/backendClient';
+import { getServices, Service } from '../lib/api';
 
-interface Service {
-    id: string;
-    name: string;
-    minutes: number;
-    description: string;
-    price: number;
-}
 
 export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = async () => {
-    console.log(`[getServerSideProps /services] Fetching services using authenticated backend client`);
+    console.log(`[getServerSideProps /services] Fetching services using API client`);
     try {
-        const services = await backendClient.get<Service[]>('/services', {
-            timeout: 5000
-        });
+        const services = await getServices();
         console.log(`[getServerSideProps /services] Received ${services.length} services from backend.`);
         return {
             props: {
@@ -24,14 +15,6 @@ export const getServerSideProps: GetServerSideProps<{ services: Service[] }> = a
         };
     } catch (error) {
         console.error('[getServerSideProps /services] Error fetching services from backend:', error);
-        if ((error as BackendClientError).status) {
-            const backendError = error as BackendClientError;
-            console.error('[getServerSideProps /services] Backend error details:', {
-                message: backendError.message,
-                status: backendError.status,
-                data: backendError.data
-            });
-        }
         return {
             props: {
                 services: [],
