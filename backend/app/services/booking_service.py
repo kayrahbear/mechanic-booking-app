@@ -102,12 +102,12 @@ class BookingService:
         
         return booking_data
     
-    def update_availability_cache(self, transaction: firestore.Transaction, booking_data: dict):
+    def update_availability_cache(self, transaction: firestore.Transaction, booking_data: dict, db_client: firestore.Client):
         """Update the availability cache document"""
         booking_date = booking_data["slot_start"].date().isoformat()
         booking_time = booking_data["slot_start"].strftime("%H:%M")
         
-        slot_doc = self.db.collection("availability").document(booking_date)
+        slot_doc = db_client.collection("availability").document(booking_date)
         slot_snapshot = slot_doc.get(transaction=transaction)
         
         if slot_snapshot.exists:
@@ -155,7 +155,7 @@ class BookingService:
             transaction.set(booking_ref, booking_data)
             
             # Update availability cache
-            self.update_availability_cache(transaction, booking_data)
+            self.update_availability_cache(transaction, booking_data, self.db)
             
             return True
         
