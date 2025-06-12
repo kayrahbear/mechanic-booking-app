@@ -93,13 +93,10 @@ steps:
       echo "✓ Quick Cloud Run update will run"
       echo "cloudrun-update" > /workspace/terraform-flag
 
-- id: terraform-apply
-  name: hashicorp/terraform:1.6.6  # Use newer terraform version that supports import blocks
-  dir: infra
-  waitFor: ['backend-push', 'frontend-build', 'worker-push', 'check-terraform-changes']  # Wait for all pushes
-  entrypoint: /bin/sh                      # <— key fix: run shell, not terraform
-  env:
-    - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com
+- id: cloudrun-update
+  name: gcr.io/cloud-builders/gcloud
+  waitFor: ['backend-push', 'frontend-build', 'worker-push', 'check-terraform-changes']
+  entrypoint: bash
   args:
     - -c
     - |
@@ -116,19 +113,39 @@ steps:
         echo "Updating backend-api..."
         gcloud run services update backend-api \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA \
-          --region=${_REGION} || echo "Backend update failed"
+          --region=${_REGION} --quiet
           
         echo "Updating frontend-ssr..."
         gcloud run services update frontend-ssr \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA \
-          --region=${_REGION} || echo "Frontend update failed"
+          --region=${_REGION} --quiet
           
         echo "Updating notification-worker..."
         gcloud run services update notification-worker \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA \
-          --region=${_REGION} || echo "Worker update failed"
+          --region=${_REGION} --quiet
           
         echo "=== Cloud Run services update completed ==="
+        exit 0
+      elif [ "$$FLAG" = "terraform-full" ]; then
+        echo "Skipping quick update - full Terraform will handle deployment"
+        exit 0
+      fi
+
+- id: terraform-apply
+  name: hashicorp/terraform:1.6.6  # Use newer terraform version that supports import blocks
+  dir: infra
+  waitFor: ['cloudrun-update']  # Wait for Cloud Run update
+  entrypoint: /bin/sh                      # <— key fix: run shell, not terraform
+  env:
+    - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com
+  args:
+    - -c
+    - |
+      FLAG=$$(cat /workspace/terraform-flag)
+      
+      if [ "$$FLAG" != "terraform-full" ]; then
+        echo "Skipping Terraform - Cloud Run already updated"
         exit 0
       fi
       
