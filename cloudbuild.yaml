@@ -85,12 +85,17 @@ steps:
   args:
     - -c
     - |
-      # Check if any infrastructure files changed
-      if git diff --name-only HEAD~1 HEAD | grep -E '^(infra/|cloudbuild\.yaml)'; then
-        echo "Infrastructure changes detected - Terraform will run"
-        echo "terraform-needed" > /workspace/terraform-flag
+      # Check what type of changes we have
+      CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || echo "")
+      
+      if echo "$CHANGED_FILES" | grep -E '^infra/'; then
+        echo "Infrastructure changes detected - Full Terraform will run"
+        echo "terraform-full" > /workspace/terraform-flag
+      elif echo "$CHANGED_FILES" | grep -E '^(backend/|frontend/|functions/)'; then
+        echo "Code changes detected - Quick Cloud Run update will run"
+        echo "cloudrun-update" > /workspace/terraform-flag
       else
-        echo "No infrastructure changes - skipping Terraform"
+        echo "No deployment changes - skipping updates"
         echo "terraform-skip" > /workspace/terraform-flag
       fi
 
@@ -104,13 +109,32 @@ steps:
   args:
     - -c
     - |
-      # Check if Terraform should run
-      if [ "$(cat /workspace/terraform-flag)" = "terraform-skip" ]; then
-        echo "Skipping Terraform - no infrastructure changes detected"
+      FLAG=$(cat /workspace/terraform-flag)
+      
+      if [ "$FLAG" = "terraform-skip" ]; then
+        echo "Skipping all updates - no relevant changes detected"
+        exit 0
+      elif [ "$FLAG" = "cloudrun-update" ]; then
+        echo "Quick Cloud Run update - code changes detected"
+        
+        # Update Cloud Run services with new images (much faster than full Terraform)
+        gcloud run services update backend-api \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA \
+          --region=${_REGION} --quiet
+          
+        gcloud run services update frontend-ssr \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA \
+          --region=${_REGION} --quiet
+          
+        gcloud run services update notification-worker \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA \
+          --region=${_REGION} --quiet
+          
+        echo "Cloud Run services updated successfully"
         exit 0
       fi
       
-      echo "Running Terraform - infrastructure changes detected"
+      echo "Running full Terraform - infrastructure changes detected"
       
       # Initialize terraform with upgrade flag to ensure plugins are installed
       terraform init -upgrade \
