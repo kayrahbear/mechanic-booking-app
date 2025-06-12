@@ -120,11 +120,11 @@ export const updateMechanicAvailability = async (schedule: MechanicSchedule): Pr
 
 // User profile endpoints
 export const getUserProfile = async (): Promise<UserProfile> => {
-    return apiClient.get<UserProfile>('/user');
+    return apiClient.get<UserProfile>('/users/me');
 };
 
 export const updateUserProfile = async (data: { name: string; phone?: string }): Promise<UserProfile> => {
-    return apiClient.put<UserProfile>('/user', data);
+    return apiClient.put<UserProfile>('/users/me', data);
 };
 
 // Admin endpoints
