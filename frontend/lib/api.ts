@@ -128,8 +128,5 @@ export const updateUserProfile = async (data: { name: string; phone?: string }):
 };
 
 // Admin endpoints
-export const seedAvailability = async (): Promise<{ created: number; updated: number; skipped: number; }> => {
-    return apiClient.post<{ created: number; updated: number; skipped: number; }>('/availability/seed', {});
-};
 
 export default apiClient;

@@ -7,7 +7,7 @@ import MechanicAvailabilityManager from '../../components/MechanicAvailabilityMa
 import PendingAppointmentsList from '../../components/PendingAppointmentsList';
 import UpcomingAppointmentsList from '../../components/UpcomingAppointmentsList';
 import ServiceManager from '../../components/ServiceManager';
-import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability, seedAvailability } from '../../lib/api';
+import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
 import { User } from 'firebase/auth';
 
 // Wrapper component to handle async token for ServiceManager
@@ -47,7 +47,6 @@ export default function MechanicDashboard() {
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability' | 'services'>('pending');
     const [mechanicSchedule, setMechanicSchedule] = useState<MechanicSchedule | null>(null);
-    const [isSeedingAvailability, setIsSeedingAvailability] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -138,22 +137,6 @@ export default function MechanicDashboard() {
         }
     };
 
-    const handleSeedAvailability = async () => {
-        setIsSeedingAvailability(true);
-        setError(null);
-        try {
-            if (user) {
-                const result = await seedAvailability();
-
-                alert(`Availability seeded successfully! Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}`);
-            }
-        } catch (err) {
-            console.error('Error seeding availability:', err);
-            setError('Failed to seed availability. Please try again.');
-        } finally {
-            setIsSeedingAvailability(false);
-        }
-    };
 
     return (
         <ProtectedRoute requiredRole="mechanic">
@@ -172,18 +155,6 @@ export default function MechanicDashboard() {
                         <div className="bg-white shadow rounded-lg p-6 mb-6 dark:bg-neutral-800">
                             <h2 className="text-xl font-semibold mb-4">Welcome, {user?.displayName || user?.email}</h2>
                             <p className="text-gray-600">Role: {userRole}</p>
-                            <div className="mt-4">
-                                <button
-                                    className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded"
-                                    onClick={handleSeedAvailability}
-                                    disabled={isSeedingAvailability}
-                                >
-                                    {isSeedingAvailability ? 'Setting Availability...' : 'Set Availability for Next Week'}
-                                </button>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Creates availability slots for next week based on your schedule
-                                </p>
-                            </div>
                             {error && <p className="text-red-600 mt-2">{error}</p>}
                         </div>
 
