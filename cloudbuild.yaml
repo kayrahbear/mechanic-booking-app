@@ -4,7 +4,7 @@ substitutions:
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: E2_STANDARD_4  # Good balance of cost and performance
+  machineType: 'e2-highcpu-8'  # Good balance of cost and performance
 
 steps:
 ###############################################################################
