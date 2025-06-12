@@ -86,12 +86,12 @@ steps:
     - -c
     - |
       # Check what type of changes we have
-      CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || echo "")
+      CHANGED_FILES=$$(git diff --name-only HEAD~1 HEAD || echo "")
       
-      if echo "$CHANGED_FILES" | grep -E '^infra/'; then
+      if echo "$$CHANGED_FILES" | grep -E '^infra/'; then
         echo "Infrastructure changes detected - Full Terraform will run"
         echo "terraform-full" > /workspace/terraform-flag
-      elif echo "$CHANGED_FILES" | grep -E '^(backend/|frontend/|functions/)'; then
+      elif echo "$$CHANGED_FILES" | grep -E '^(backend/|frontend/|functions/)'; then
         echo "Code changes detected - Quick Cloud Run update will run"
         echo "cloudrun-update" > /workspace/terraform-flag
       else
@@ -109,12 +109,12 @@ steps:
   args:
     - -c
     - |
-      FLAG=$(cat /workspace/terraform-flag)
+      FLAG=$$(cat /workspace/terraform-flag)
       
-      if [ "$FLAG" = "terraform-skip" ]; then
+      if [ "$$FLAG" = "terraform-skip" ]; then
         echo "Skipping all updates - no relevant changes detected"
         exit 0
-      elif [ "$FLAG" = "cloudrun-update" ]; then
+      elif [ "$$FLAG" = "cloudrun-update" ]; then
         echo "Quick Cloud Run update - code changes detected"
         
         # Update Cloud Run services with new images (much faster than full Terraform)
