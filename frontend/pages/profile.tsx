@@ -23,8 +23,7 @@ export default function ProfilePage() {
                 setLoading(true);
                 setError('');
 
-                const token = await user.getIdToken();
-                const profile = await getUserProfile(token);
+                const profile = await getUserProfile();
 
                 setName(profile.name || '');
                 setPhone(profile.phone || '');
@@ -60,8 +59,7 @@ export default function ProfilePage() {
             setError('');
             setSuccess(false);
 
-            const token = await user.getIdToken();
-            await updateUserProfile(token, {
+            await updateUserProfile({
                 name: name.trim(),
                 phone: phone.trim() || undefined
             });

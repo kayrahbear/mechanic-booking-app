@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuth } from '../../lib/auth-context';
 import ProtectedRoute from '../../lib/protected-route';
-import httpClient, { HttpClientError } from '../../lib/httpClient';
+import apiClient, { ApiError } from '../../lib/apiClient';
 
 interface UserData {
     uid: string;
@@ -30,13 +30,11 @@ export default function AdminUserManagement() {
             setLoading(true);
             setError(null);
             try {
-                const token = await user.getIdToken();
-                httpClient.setAuthToken(token);
-                const data = await httpClient.get<UserData[]>('/api/admin/users');
+                const data = await apiClient.get<UserData[]>('/admin/users');
                 setUsers(data);
             } catch (err) {
                 console.error('Error fetching users:', err);
-                const errorMsg = ((err as HttpClientError).data as { error?: string })?.error || 'Failed to load users. Ensure you are an admin.';
+                const errorMsg = ((err as ApiError).data as { error?: string })?.error || 'Failed to load users. Ensure you are an admin.';
                 setError(errorMsg);
             } finally {
                 setLoading(false);
@@ -50,18 +48,15 @@ export default function AdminUserManagement() {
         setUpdatingRole(uid);
         setError(null);
         try {
-            const token = await user.getIdToken();
-            httpClient.setAuthToken(token);
-
-            await httpClient.post(`/api/admin/users/${uid}/role`, { role: newRole });
+            await apiClient.post(`/admin/users/${uid}/role`, { role: newRole });
 
             // Refresh user list after successful update
-            const data = await httpClient.get<UserData[]>('/api/admin/users');
+            const data = await apiClient.get<UserData[]>('/admin/users');
             setUsers(data);
             alert(`Role updated successfully for user ${uid}`);
         } catch (err) {
             console.error(`Error updating role for user ${uid}:`, err);
-            const errorMsg = ((err as HttpClientError).data as { error?: string })?.error || 'Failed to update role.';
+            const errorMsg = ((err as ApiError).data as { error?: string })?.error || 'Failed to update role.';
             setError(errorMsg);
         } finally {
             setUpdatingRole(null);

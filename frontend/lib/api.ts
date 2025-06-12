@@ -1,5 +1,4 @@
-import httpClient from './httpClient';
-import backendClient from './backendClient';
+import apiClient from './apiClient';
 import { Booking, MechanicSchedule } from './types';
 
 // Define interfaces for API responses
@@ -31,45 +30,25 @@ export interface UserProfile {
     role?: string;
 }
 
-// Auth utilities
-export const setAuthToken = (token: string | null) => {
-    httpClient.setAuthToken(token);
-};
-
-// Basic API endpoints
+// Service endpoints
 export const getServices = async (): Promise<Service[]> => {
-    // Use the API proxy endpoint when in the browser, authenticated backend client on server
-    if (typeof window !== 'undefined') {
-        // Browser: use API proxy
-        return httpClient.get<Service[]>('/api/services');
-    } else {
-        // Server: use authenticated backend client
-        return backendClient.get<Service[]>('/services');
-    }
+    return apiClient.get<Service[]>('/services');
 };
 
-// Get all services including inactive ones (for mechanics/admins)
-export const getAllServices = async (token: string): Promise<Service[]> => {
-    setAuthToken(token);
-    return httpClient.get<Service[]>('/api/services?all=true');
+export const getAllServices = async (): Promise<Service[]> => {
+    return apiClient.get<Service[]>('/services', { params: { all: 'true' } });
 };
 
-// Create a new service
-export const createService = async (token: string, serviceData: Omit<Service, 'id'>): Promise<Service> => {
-    setAuthToken(token);
-    return httpClient.post<Service>('/api/services', serviceData);
+export const createService = async (serviceData: Omit<Service, 'id'>): Promise<Service> => {
+    return apiClient.post<Service>('/services', serviceData);
 };
 
-// Update an existing service
-export const updateService = async (token: string, serviceId: string, serviceData: Omit<Service, 'id'>): Promise<Service> => {
-    setAuthToken(token);
-    return httpClient.put<Service>(`/api/services?id=${serviceId}`, serviceData);
+export const updateService = async (serviceId: string, serviceData: Omit<Service, 'id'>): Promise<Service> => {
+    return apiClient.put<Service>(`/services?id=${serviceId}`, serviceData);
 };
 
-// Delete a service (soft delete)
-export const deleteService = async (token: string, serviceId: string): Promise<{ message: string }> => {
-    setAuthToken(token);
-    return httpClient.delete<{ message: string }>(`/api/services?id=${serviceId}`);
+export const deleteService = async (serviceId: string): Promise<{ message: string }> => {
+    return apiClient.delete<{ message: string }>(`/services?id=${serviceId}`);
 };
 
 // Legacy function for backward compatibility
@@ -77,117 +56,80 @@ export const fetchServices = async (): Promise<Service[]> => {
     return getServices();
 };
 
+// Availability endpoints
 export const getAvailability = async (date: string): Promise<AvailabilityResponse> => {
-    // Use the API proxy endpoint
-    return httpClient.get<AvailabilityResponse>(`/api/availability`, { params: { date } });
+    return apiClient.get<AvailabilityResponse>('/availability', { params: { date } });
 };
 
-// Legacy function for backward compatibility
 export const fetchAvailableSlots = async (date: string): Promise<AvailabilityResponse> => {
-    // Build query parameters - no longer passing service_id as there's only one mechanic who can perform all services
-    const params: Record<string, string> = { date };
-    // Removed service_id parameter as it's no longer needed for filtering
-
-    // Determine environment (browser vs. Node / SSR)
-    const isBrowser = typeof window !== 'undefined';
-
-    let data;
-
-    if (isBrowser) {
-        // In the browser we can rely on the Next.js API route proxy
-        data = await httpClient.get<BackendSlot[] | AvailabilityResponse>(`/api/availability`, { params });
-    } else {
-        // On the server (getServerSideProps / API routes) we use the authenticated backend client
-        // Backend expects the query parameter to be named "date"
-        data = await backendClient.get<BackendSlot[] | AvailabilityResponse>(`/availability?date=${date}`);
-    }
-
-    console.log("fetchAvailableSlots received data:", typeof data, Array.isArray(data) ? "array" : "object");
-
-// If backend returned the raw slot list, convert it to the shape expected by the UI
-if (Array.isArray(data)) {
-    console.log("Converting array data to slots object. Sample item:", data.length > 0 ? JSON.stringify(data[0]) : "No items");
-    console.log("Total items in array:", data.length);
-    
-    const slots: Record<string, string> = {};
-    data.forEach((slot: BackendSlot) => {
-        // Extract the HH:MM part of the timestamp **without** converting to UTC. This prevents
-        // accidental timezone shifts that would mis-align the slot time between frontend and
-        // backend (e.g. 08:00 → 13:00).
-        if (typeof slot.start === 'string' && slot.start.includes('T')) {
-            const timeKey = slot.start.split('T')[1].substring(0, 5); // "HH:MM"
-            slots[timeKey] = slot.is_free ? 'free' : 'booked';
-            console.log(`Added slot: ${timeKey} = ${slot.is_free ? 'free' : 'booked'}`);
-        } else {
-            console.log("Invalid slot format:", slot);
-        }
+    const data = await apiClient.get<BackendSlot[] | AvailabilityResponse>('/availability', { 
+        params: { date } 
     });
-    
-    console.log("Converted slots object:", Object.keys(slots).length, "slots");
-    const result = { date, slots };
-    console.log("Final result:", result);
-    return result;
-}
+
+    // If backend returned the raw slot list, convert it to the shape expected by the UI
+    if (Array.isArray(data)) {
+        const slots: Record<string, string> = {};
+        data.forEach((slot: BackendSlot) => {
+            if (typeof slot.start === 'string' && slot.start.includes('T')) {
+                const timeKey = slot.start.split('T')[1].substring(0, 5); // "HH:MM"
+                slots[timeKey] = slot.is_free ? 'free' : 'booked';
+            }
+        });
+        return { date, slots };
+    }
 
     // Otherwise assume the data is already in the desired shape
     return data as AvailabilityResponse;
 };
 
+// Booking endpoints
 export const createBooking = async (bookingData: Omit<Booking, 'id' | 'status'>): Promise<Booking> => {
-    return httpClient.post<Booking>('/api/bookings', bookingData);
+    return apiClient.post<Booking>('/bookings', bookingData);
 };
 
-export const getBookings = async (token: string): Promise<Booking[]> => {
-    setAuthToken(token);
-    return httpClient.get<Booking[]>('/api/bookings');
+export const getBookings = async (): Promise<Booking[]> => {
+    return apiClient.get<Booking[]>('/bookings');
 };
 
 // Mechanic-specific endpoints
-export const getPendingBookings = async (token: string): Promise<Booking[]> => {
-    setAuthToken(token);
-    return httpClient.get<Booking[]>('/api/bookings/mechanic/pending');
+export const getPendingBookings = async (): Promise<Booking[]> => {
+    return apiClient.get<Booking[]>('/bookings/mechanic/pending');
 };
 
-export const getUpcomingBookings = async (token: string): Promise<Booking[]> => {
-    setAuthToken(token);
-    return httpClient.get<Booking[]>('/api/bookings/mechanic/upcoming');
+export const getUpcomingBookings = async (): Promise<Booking[]> => {
+    return apiClient.get<Booking[]>('/bookings/mechanic/upcoming');
 };
 
-export const approveBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
-    setAuthToken(token);
-    return httpClient.post<Booking>(`/api/bookings/${bookingId}/approval`, {
+export const approveBooking = async (bookingId: string, notes?: string): Promise<Booking> => {
+    return apiClient.post<Booking>(`/bookings/${bookingId}/approval`, {
         approved: true,
         notes
     });
 };
 
-export const denyBooking = async (token: string, bookingId: string, notes?: string): Promise<Booking> => {
-    setAuthToken(token);
-    return httpClient.post<Booking>(`/api/bookings/${bookingId}/approval`, {
+export const denyBooking = async (bookingId: string, notes?: string): Promise<Booking> => {
+    return apiClient.post<Booking>(`/bookings/${bookingId}/approval`, {
         approved: false,
         notes
     });
 };
 
-export const updateMechanicAvailability = async (token: string, schedule: MechanicSchedule): Promise<MechanicSchedule> => {
-    setAuthToken(token);
-    return httpClient.post<MechanicSchedule>('/api/mechanic/availability', { schedule });
+export const updateMechanicAvailability = async (schedule: MechanicSchedule): Promise<MechanicSchedule> => {
+    return apiClient.post<MechanicSchedule>('/mechanic/availability', { schedule });
 };
 
-// User profile-related functions
-export const getUserProfile = async (token: string): Promise<UserProfile> => {
-    setAuthToken(token);
-    return httpClient.get<UserProfile>('/api/user');
+// User profile endpoints
+export const getUserProfile = async (): Promise<UserProfile> => {
+    return apiClient.get<UserProfile>('/user');
 };
 
-export const updateUserProfile = async (token: string, data: { name: string; phone?: string }): Promise<UserProfile> => {
-    setAuthToken(token);
-    return httpClient.put<UserProfile>('/api/user', data);
+export const updateUserProfile = async (data: { name: string; phone?: string }): Promise<UserProfile> => {
+    return apiClient.put<UserProfile>('/user', data);
 };
 
-export const seedAvailability = async (token: string): Promise<{ created: number; updated: number; skipped: number; }> => {
-    setAuthToken(token);
-    return httpClient.post<{ created: number; updated: number; skipped: number; }>('/api/availability/seed', {});
+// Admin endpoints
+export const seedAvailability = async (): Promise<{ created: number; updated: number; skipped: number; }> => {
+    return apiClient.post<{ created: number; updated: number; skipped: number; }>('/availability/seed', {});
 };
 
-export default httpClient;
+export default apiClient;

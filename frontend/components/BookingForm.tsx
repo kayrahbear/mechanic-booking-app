@@ -78,7 +78,7 @@ const loadAvailableSlots = useCallback(async () => {
     } finally {
         setIsLoading(false);
     }
-}, [selectedDate, selectedService]);
+}, [selectedDate]);
 
     // Fetch available slots when date or service changes
     useEffect(() => {
@@ -105,8 +105,7 @@ const loadAvailableSlots = useCallback(async () => {
                 }
 
                 // Then fetch the complete profile from the API to get the phone number
-                const token = await user.getIdToken();
-                const profile = await getUserProfile(token);
+                const profile = await getUserProfile();
 
                 // Only update if we got valid data and fields are still empty
                 if (profile) {
@@ -128,7 +127,8 @@ const loadAvailableSlots = useCallback(async () => {
         }
 
         loadUserProfile();
-    }, [user]); // Remove customerName from dependencies
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]); // Only depend on user, ignore customerName to avoid infinite loops
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();

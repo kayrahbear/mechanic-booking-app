@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Service, getAllServices, createService, updateService, deleteService } from '../lib/api';
 
-interface ServiceManagerProps {
-    token: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface ServiceManagerProps {}
 
 interface ServiceFormData {
     name: string;
@@ -12,7 +11,7 @@ interface ServiceFormData {
     price: number;
 }
 
-export default function ServiceManager({ token }: ServiceManagerProps) {
+export default function ServiceManager({}: ServiceManagerProps) {
     const [services, setServices] = useState<Service[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -28,13 +27,13 @@ export default function ServiceManager({ token }: ServiceManagerProps) {
 
     useEffect(() => {
         fetchServices();
-    }, [token]);
+    }, []);
 
     const fetchServices = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const servicesData = await getAllServices(token);
+            const servicesData = await getAllServices();
             setServices(servicesData);
         } catch (err) {
             console.error('Error fetching services:', err);
@@ -52,11 +51,11 @@ export default function ServiceManager({ token }: ServiceManagerProps) {
         try {
             if (editingService) {
                 // Update existing service
-                const updatedService = await updateService(token, editingService.id, formData);
+                const updatedService = await updateService(editingService.id, formData);
                 setServices(services.map(s => s.id === editingService.id ? updatedService : s));
             } else {
                 // Create new service
-                const newService = await createService(token, formData);
+                const newService = await createService(formData);
                 setServices([...services, newService]);
             }
 
@@ -90,7 +89,7 @@ export default function ServiceManager({ token }: ServiceManagerProps) {
 
         setError(null);
         try {
-            await deleteService(token, serviceId);
+            await deleteService(serviceId);
             setServices(services.filter(s => s.id !== serviceId));
         } catch (err) {
             console.error('Error deleting service:', err);

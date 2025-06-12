@@ -1,51 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from google.cloud import firestore
-from google.api_core import exceptions as google_exceptions
-from firebase_admin import auth
-from firebase_admin.auth import verify_id_token
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 import logging
-import tenacity
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from pydantic import BaseModel
 
 from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole
 from ..firestore import get_client
 from ..auth import get_current_user, get_admin_user, get_mechanic_user
 from ..notifications import send_booking_notification
-from ..google_calendar import create_event, delete_event
-from google.api_core.exceptions import GoogleAPIError
+from ..google_calendar import delete_event
+from ..services.booking_service import BookingError, SlotUnavailableError, ServiceNotFoundError
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 # Setup logging
 logger = logging.getLogger(__name__)
-
-# Retry configuration for transient Firestore errors
-retry_config = {
-    'stop': stop_after_attempt(3),
-    'wait': wait_exponential(multiplier=1, min=1, max=10),
-    'retry': retry_if_exception_type((google_exceptions.ServiceUnavailable, 
-                                      google_exceptions.DeadlineExceeded)),
-    'reraise': True,
-}
-
-class BookingError(Exception):
-    """Base exception for booking errors."""
-    pass
-
-class SlotUnavailableError(BookingError):
-    """Raised when a slot is not available for booking."""
-    pass
-
-class ServiceNotFoundError(BookingError):
-    """Raised when a service is not found."""
-    pass
-
-class DayNotPublishedError(BookingError):
-    """Raised when availability for a day has not been published."""
-    pass
 
 class BookingApproval(BaseModel):
     """Model for booking approval requests"""
@@ -114,29 +84,15 @@ async def create_booking(
     background_tasks: BackgroundTasks,
     current_user = Depends(get_current_user)
 ):
-    """
-    Create a new booking with transactional integrity.
-    
-    This endpoint:
-    1. Validates that the service exists
-    2. Validates that the requested time slot is available
-    3. Uses a Firestore transaction to atomically:
-       - Mark the slot as booked
-       - Create the booking record
-    
-    Returns the created booking with all fields populated.
-    """
-    db = get_client()
-    if not db:
-        raise HTTPException(500, "DB unavailable")
-
+    """Create a new booking with transactional integrity."""
     # Ensure the user can only book with their own email
     if current_user and current_user.email != payload.customer_email:
         raise HTTPException(403, "You can only create bookings with your own email")
     
     try:
-        # Execute booking process with retries for transient errors
-        booking = await create_booking_with_transaction(db, payload)
+        from ..services import BookingService
+        booking_service = BookingService()
+        booking = await booking_service.create_booking(payload)
         
         # Add background task for notifications
         background_tasks.add_task(send_booking_notification, booking)
@@ -145,8 +101,6 @@ async def create_booking(
         
     except ServiceNotFoundError:
         raise HTTPException(404, "Service not found")
-    except DayNotPublishedError:
-        raise HTTPException(400, "No availability published for the requested day")
     except SlotUnavailableError:
         raise HTTPException(409, "The requested time slot is no longer available")
     except BookingError as e:
@@ -156,155 +110,7 @@ async def create_booking(
         logger.exception(f"Unexpected error during booking creation: {str(e)}")
         raise HTTPException(500, "An unexpected error occurred")
 
-@tenacity.retry(**retry_config)
-async def create_booking_with_transaction(db, payload: BookingCreate) -> BookingOut:
-    """
-    Execute the booking creation process within a transaction.
-    
-    Now uses dynamic availability validation instead of pre-seeded availability documents.
-    Retries on transient Firestore errors using exponential backoff.
-    """
-    # Get service to calculate end time
-    service_ref = db.collection("services").document(payload.service_id)
-    service_doc = service_ref.get()
-    if not service_doc.exists:
-        raise ServiceNotFoundError(f"Service {payload.service_id} not found")
-    
-    service_data = service_doc.to_dict()
-    service_duration = service_data.get("minutes", 30)
-    
-    # Validate availability dynamically before attempting booking
-    booking_date = payload.slot_start.date()
-    booking_time = payload.slot_start.strftime("%H:%M")
-    
-    # Import the availability generation function
-    from .availability import _generate_availability_for_day
-    
-    # Generate current availability for the requested date and service
-    available_slots = await _generate_availability_for_day(db, booking_date, payload.service_id)
-    
-    # Check if the requested slot is available
-    requested_slot = None
-    for slot in available_slots:
-        slot_time = datetime.fromisoformat(slot.start.replace('Z', '')).strftime("%H:%M")
-        if slot_time == booking_time and slot.is_free:
-            requested_slot = slot
-            break
-    
-    if not requested_slot:
-        raise SlotUnavailableError(f"Time slot {booking_time} is not available for the requested service")
-    
-    # Use the mechanic from the available slot
-    if requested_slot.mechanic_id:
-        payload.mechanic_id = requested_slot.mechanic_id
-    
-    # Calculate end time
-    slot_end = payload.slot_start + timedelta(minutes=service_duration)
-    
-    # Create booking with additional fields
-    booking_data = payload.model_dump()
-    booking_data["slot_end"] = slot_end
-    booking_data["status"] = BookingStatus.PENDING.value
-    booking_data["created_at"] = firestore.SERVER_TIMESTAMP
-    booking_data["updated_at"] = firestore.SERVER_TIMESTAMP
-    
-    # Store service details for historical record
-    booking_data["service_name"] = service_data.get("name", "")
-    booking_data["service_price"] = service_data.get("price", 0)
-    
-    booking_ref = db.collection("bookings").document()
-
-    # The transaction function that will be executed atomically
-    @firestore.transactional
-    def txn(transaction: firestore.Transaction):
-        # Double-check availability within the transaction by checking existing bookings
-        day_start = datetime.combine(booking_date, datetime.min.time())
-        day_end = datetime.combine(booking_date, datetime.max.time())
-        
-        # Check for conflicting bookings at the exact same time
-        existing_bookings = db.collection("bookings").where(
-            "slot_start", "==", payload.slot_start
-        ).where(
-            "status", "in", ["pending", "confirmed"]
-        ).stream()
-        
-        for existing_booking in existing_bookings:
-            existing_data = existing_booking.to_dict()
-            # If there's a booking with the same mechanic at the same time, it's a conflict
-            if existing_data.get("mechanic_id") == payload.mechanic_id:
-                raise SlotUnavailableError(f"Time slot {booking_time} is already booked")
-        
-        # Read the availability document BEFORE any writes
-        slot_doc = db.collection("availability").document(booking_date.isoformat())
-        slot_snapshot = slot_doc.get(transaction=transaction)
-        
-        # Now perform all writes after all reads are complete
-        # Write booking record
-        transaction.set(booking_ref, booking_data)
-        
-        # Update or create availability document
-        if slot_snapshot.exists:
-            # Update existing availability cache to mark slot as booked
-            availability_data = slot_snapshot.to_dict()
-            slots = availability_data.get("slots", {})
-            slots[booking_time] = SlotStatus.BOOKED.value
-            transaction.update(slot_doc, {
-                "slots": slots,
-                "updated_at": firestore.SERVER_TIMESTAMP
-            })
-        else:
-            # Create a minimal availability document to track this booking
-            transaction.set(slot_doc, {
-                "day": booking_date.isoformat(),
-                "slots": {booking_time: SlotStatus.BOOKED.value},
-                "mechanics": {payload.mechanic_id: True} if payload.mechanic_id else {},
-                "generated_dynamically": True,
-                "created_at": firestore.SERVER_TIMESTAMP,
-                "updated_at": firestore.SERVER_TIMESTAMP,
-            })
-        
-        # Return success indicator
-        return True
-
-    # Execute the transaction
-    transaction_success = txn(db.transaction())
-    
-    if not transaction_success:
-        raise BookingError("Transaction failed")
-    
-    # Return the fully-populated booking
-    booking_id = booking_ref.id
-
-    # Fetch the booking data
-    booking_doc = db.collection("bookings").document(booking_id).get()
-    if not booking_doc.exists:
-        raise BookingError("Booking not found")
-    
-    booking_data = booking_doc.to_dict()
-    
-    # Create a response object without the SERVER_TIMESTAMP values
-    response_data = booking_data.copy()
-    # Replace sentinel values with actual datetime values for the response
-    current_time = datetime.now()
-    response_data["created_at"] = current_time
-    response_data["updated_at"] = current_time
-    
-    # Construct the BookingOut model instance we will return
-    booking_out = BookingOut(id=booking_id, **response_data)
-
-    # Attempt to create a Google Calendar event for the booking
-    try:
-        calendar_event_id = create_event(booking_out)  # returns id string
-        # Persist the event ID in Firestore (best-effort)
-        db.collection("bookings").document(booking_id).update({
-            "calendar_event_id": calendar_event_id
-        })
-        # Include it in the API response as well
-        booking_out.calendar_event_id = calendar_event_id
-    except GoogleAPIError as e:
-        logger.error("Calendar sync failed for booking %s: %s", booking_id, e.message)
-
-    return booking_out
+# Removed the old complex booking function - now using BookingService
 
 @router.get("", response_model=List[BookingOut])
 async def get_bookings(

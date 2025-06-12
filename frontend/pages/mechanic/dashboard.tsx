@@ -34,7 +34,7 @@ function ServiceManagerWrapper({ user }: { user: User }) {
         );
     }
 
-    return <ServiceManager token={token} />;
+    return <ServiceManager />;
 }
 
 export default function MechanicDashboard() {
@@ -56,12 +56,11 @@ export default function MechanicDashboard() {
             try {
                 if (user) {
                     // Fetch pending bookings
-                    const token = await user.getIdToken();
-                    const pendingBookingsData = await getPendingBookings(token);
+                    const pendingBookingsData = await getPendingBookings();
                     setPendingBookings(pendingBookingsData);
 
                     // Fetch upcoming bookings
-                    const upcomingBookingsData = await getUpcomingBookings(token);
+                    const upcomingBookingsData = await getUpcomingBookings();
                     setUpcomingBookings(upcomingBookingsData);
 
                     // Fetch mechanic schedule 
@@ -85,9 +84,8 @@ export default function MechanicDashboard() {
         setError(null);
         try {
             if (user) {
-                const token = await user.getIdToken();
                 // Use the actual API endpoint now
-                await updateMechanicAvailability(token, schedule);
+                await updateMechanicAvailability(schedule);
 
                 setMechanicSchedule(schedule);
                 // Update success message
@@ -106,8 +104,7 @@ export default function MechanicDashboard() {
         setError(null);
         try {
             if (user) {
-                const token = await user.getIdToken();
-                const updatedBooking = await approveBooking(token, bookingId, notes);
+                const updatedBooking = await approveBooking(bookingId, notes);
 
                 // Update the local state to remove the processed booking from pending
                 setPendingBookings(pendingBookings.filter(booking => booking.id !== bookingId));
@@ -128,8 +125,7 @@ export default function MechanicDashboard() {
         setError(null);
         try {
             if (user) {
-                const token = await user.getIdToken();
-                await denyBooking(token, bookingId, notes);
+                await denyBooking(bookingId, notes);
 
                 // Update the local state to remove the processed booking
                 setPendingBookings(pendingBookings.filter(booking => booking.id !== bookingId));
@@ -147,8 +143,7 @@ export default function MechanicDashboard() {
         setError(null);
         try {
             if (user) {
-                const token = await user.getIdToken();
-                const result = await seedAvailability(token);
+                const result = await seedAvailability();
 
                 alert(`Availability seeded successfully! Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}`);
             }
