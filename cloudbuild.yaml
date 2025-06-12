@@ -67,13 +67,6 @@ steps:
     '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
   ]
 
-- id: frontend-push
-  name: gcr.io/cloud-builders/docker
-  waitFor: ['frontend-build']
-  args: [
-    'push',
-    '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
-  ]
 
 - id: worker-push
   name: gcr.io/cloud-builders/docker
@@ -89,7 +82,7 @@ steps:
 - id: terraform-apply
   name: hashicorp/terraform:1.6.6  # Use newer terraform version that supports import blocks
   dir: infra
-  waitFor: ['backend-push', 'frontend-push', 'worker-push']  # Wait for all pushes
+  waitFor: ['backend-push', 'frontend-build', 'worker-push']  # Wait for all pushes
   entrypoint: /bin/sh                      # <— key fix: run shell, not terraform
   env:
     - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com
