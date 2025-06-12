@@ -72,18 +72,6 @@ class BookingService:
         
         raise SlotUnavailableError(f"Time slot {booking_time} is not available")
     
-    def check_conflicts(self, payload: BookingCreate, mechanic_id: str):
-        """Check for booking conflicts at the same time"""
-        existing_bookings = self.db.collection("bookings").where(
-            "slot_start", "==", payload.slot_start
-        ).where(
-            "status", "in", ["pending", "confirmed"]
-        ).stream()
-        
-        for existing_booking in existing_bookings:
-            existing_data = existing_booking.to_dict()
-            if existing_data.get("mechanic_id") == mechanic_id:
-                raise SlotUnavailableError("Time slot is already booked")
     
     def create_booking_data(self, payload: BookingCreate, service: dict) -> dict:
         """Create the booking data dictionary"""
@@ -102,17 +90,16 @@ class BookingService:
         
         return booking_data
     
-    def update_availability_cache(self, transaction: firestore.Transaction, booking_data: dict, db_client: firestore.Client):
-        """Update the availability cache document"""
+    def update_availability_cache(self, transaction: firestore.Transaction, booking_data: dict, db_client: firestore.Client, availability_snapshot):
+        """Update the availability cache document using pre-read data"""
         booking_date = booking_data["slot_start"].date().isoformat()
         booking_time = booking_data["slot_start"].strftime("%H:%M")
         
         slot_doc = db_client.collection("availability").document(booking_date)
-        slot_snapshot = slot_doc.get(transaction=transaction)
         
-        if slot_snapshot.exists:
+        if availability_snapshot and availability_snapshot.exists:
             # Update existing availability cache
-            availability_data = slot_snapshot.to_dict()
+            availability_data = availability_snapshot.to_dict()
             slots = availability_data.get("slots", {})
             slots[booking_time] = SlotStatus.BOOKED.value
             transaction.update(slot_doc, {
@@ -145,17 +132,33 @@ class BookingService:
         booking_data = self.create_booking_data(payload, service)
         booking_ref = self.db.collection("bookings").document()
         
-        # 4. Execute transaction
+        # 4. Execute transaction with read-before-write pattern
         @firestore.transactional
         def txn(transaction: firestore.Transaction):
-            # Check for conflicts within transaction
-            self.check_conflicts(payload, mechanic_id)
+            # READS FIRST: Read availability document before any writes
+            booking_date = booking_data["slot_start"].date().isoformat()
+            slot_doc = self.db.collection("availability").document(booking_date)
+            availability_snapshot = slot_doc.get(transaction=transaction)
             
+            # Check for conflicts (this may involve reads, so do it early)
+            existing_bookings = self.db.collection("bookings").where(
+                "slot_start", "==", payload.slot_start
+            ).where(
+                "status", "in", ["pending", "confirmed"]
+            ).get(transaction=transaction)
+            
+            # Validate no conflicts exist
+            for existing_booking in existing_bookings:
+                existing_data = existing_booking.to_dict()
+                if existing_data.get("mechanic_id") == mechanic_id:
+                    raise SlotUnavailableError("Time slot is already booked")
+            
+            # WRITES SECOND: Now perform all write operations
             # Create booking
             transaction.set(booking_ref, booking_data)
             
-            # Update availability cache
-            self.update_availability_cache(transaction, booking_data, self.db)
+            # Update availability cache using pre-read data
+            self.update_availability_cache(transaction, booking_data, self.db, availability_snapshot)
             
             return True
         
