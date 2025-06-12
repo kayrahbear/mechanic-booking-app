@@ -4,13 +4,16 @@
 FROM node:20-bullseye AS builder
 WORKDIR /app
 
-# 1. install deps with clean, repeatable layer
+# 1. install deps with clean, repeatable layer and cache
 COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps --cache /root/.npm
 
 # 2. copy source & build standalone output
 COPY . .
-RUN npm run build          # generates .next, required for SSR
+# Use Next.js cache for faster builds
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build          # generates .next, required for SSR
 
 ########################
 #  Stage 2 – runtime   #

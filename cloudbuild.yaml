@@ -4,32 +4,12 @@ substitutions:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: E2_STANDARD_4  # Good balance of cost and performance
 
 steps:
 ###############################################################################
-# 1  Build & push backend container
+# 1  Fetch Firebase config (needed for frontend build)
 ###############################################################################
-- id: backend-build
-  name: gcr.io/cloud-builders/docker
-  dir: backend
-  args: [
-    'build','-t',
-    '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA',
-    '.'
-  ]
-
-- id: backend-push
-  name: gcr.io/cloud-builders/docker
-  args: [
-    'push',
-    '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
-  ]
-
-###############################################################################
-# 2  Build & push frontend container
-###############################################################################
-
-# Add a step to fetch Firebase config from Secret Manager
 - id: fetch-firebase-config
   name: gcr.io/cloud-builders/gcloud
   entrypoint: bash
@@ -40,21 +20,24 @@ steps:
       gcloud secrets versions access latest --secret=firebase-web-config --project=$PROJECT_ID > frontend/.env.local
       echo "Firebase config fetched successfully"
 
-# Debug step to print environment variables
-- id: debug-env-vars
-  name: bash
-  entrypoint: bash
-  dir: frontend
-  args:
-    - -c
-    - |
-      echo "=== Environment variables in .env.local ==="
-      cat .env.local
-      echo "=========================================="
+###############################################################################
+# 2  Build all containers in parallel
+###############################################################################
+- id: backend-build
+  name: gcr.io/cloud-builders/docker
+  dir: backend
+  waitFor: ['-']  # Start immediately, don't wait for other steps
+  args: [
+    'build','-t',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA',
+    '--cache-from', '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:latest',
+    '.'
+  ]
 
 - id: frontend-build
   name: gcr.io/kaniko-project/executor:latest
   dir: frontend
+  waitFor: ['fetch-firebase-config']  # Only wait for config
   args:
     - --destination=${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA
     - --context=/workspace/frontend
@@ -62,20 +45,39 @@ steps:
     - --cache-ttl=24h
     - --cache-repo=${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/cache
 
-###############################################################################
-# 3  Build & push worker container
-###############################################################################
 - id: worker-build
   name: gcr.io/cloud-builders/docker
   dir: backend/worker
+  waitFor: ['-']  # Start immediately, don't wait for other steps
   args: [
     'build','-t',
     '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA',
+    '--cache-from', '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:latest',
     '.'
+  ]
+
+###############################################################################
+# 3  Push all containers in parallel
+###############################################################################
+- id: backend-push
+  name: gcr.io/cloud-builders/docker
+  waitFor: ['backend-build']
+  args: [
+    'push',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
+  ]
+
+- id: frontend-push
+  name: gcr.io/cloud-builders/docker
+  waitFor: ['frontend-build']
+  args: [
+    'push',
+    '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
   ]
 
 - id: worker-push
   name: gcr.io/cloud-builders/docker
+  waitFor: ['worker-build']
   args: [
     'push',
     '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA'
@@ -87,6 +89,7 @@ steps:
 - id: terraform-apply
   name: hashicorp/terraform:1.6.6  # Use newer terraform version that supports import blocks
   dir: infra
+  waitFor: ['backend-push', 'frontend-push', 'worker-push']  # Wait for all pushes
   entrypoint: /bin/sh                      # <— key fix: run shell, not terraform
   env:
     - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=terraform-sa@$PROJECT_ID.iam.gserviceaccount.com
@@ -224,8 +227,7 @@ steps:
 
 images:
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA'
-# This image is pushed by the Kaniko step, so remove from here for verification
-#- '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
+- '${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA'
 - '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA'
 
 timeout: 1800s   # 30 minutes
