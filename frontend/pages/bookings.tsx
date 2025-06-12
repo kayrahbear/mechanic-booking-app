@@ -1,8 +1,9 @@
-import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ProtectedRoute from '../lib/protected-route';
 import Link from 'next/link';
+import apiClient from '../lib/apiClient';
+import { useAuth } from '../lib/auth-context';
 
 interface Booking {
     id: string;
@@ -16,32 +17,39 @@ interface Booking {
     calendar_event_id?: string;
 }
 
-export const getServerSideProps: GetServerSideProps<{ bookings: Booking[] }> = async () => {
-    try {
-        // Replace with actual API call
-        const bookings = await fetch('https://api.example.com/bookings')
-            .then(res => res.json())
-            .catch(() => []);
-
-        return {
-            props: {
-                bookings,
-            },
-        };
-    } catch (error) {
-        console.error('Error fetching bookings:', error);
-        return {
-            props: {
-                bookings: [],
-            },
-        };
-    }
-};
-
-const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
+const BookingsPage = () => {
+    const { user } = useAuth();
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const { success } = router.query;
     const [showSuccess, setShowSuccess] = useState(false);
+
+    // Fetch bookings when user is authenticated
+    useEffect(() => {
+        const fetchBookings = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError(null);
+                const fetchedBookings = await apiClient.get<Booking[]>('/bookings');
+                setBookings(fetchedBookings);
+            } catch (err) {
+                console.error('Error fetching bookings:', err);
+                setError('Failed to load bookings. Please try again.');
+                setBookings([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBookings();
+    }, [user]);
 
     useEffect(() => {
         if (success === 'true') {
@@ -67,7 +75,18 @@ const BookingsPage = ({ bookings }: { bookings: Booking[] }) => {
                     </div>
                 )}
 
-                {bookings.length === 0 ? (
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md border border-red-200">
+                        <p className="font-medium">Error loading bookings</p>
+                        <p>{error}</p>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card border border-neutral-100 dark:border-neutral-700 text-center">
+                        <p className="text-neutral-800 dark:text-neutral-200">Loading your bookings...</p>
+                    </div>
+                ) : bookings.length === 0 ? (
                     <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card border border-neutral-100 dark:border-neutral-700 text-center">
                         <p className="text-neutral-800 dark:text-neutral-200">You don&apos;t have any bookings yet.</p>
                     </div>

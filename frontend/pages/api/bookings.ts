@@ -5,8 +5,8 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    // Only allow POST requests
-    if (req.method !== 'POST') {
+    // Allow GET and POST requests
+    if (req.method !== 'GET' && req.method !== 'POST') {
         return res.status(405).json({ detail: 'Method not allowed' });
     }
 
@@ -18,9 +18,9 @@ export default async function handler(
     // Configure options for the request
     const options = {
         timeout: 5000,
-        // Booking creation requires user authentication
+        // Both booking creation and fetching require user authentication
         requireAuth: true,
-        // Use user authentication (Firebase token) for booking creation
+        // Use user authentication (Firebase token) for all booking operations
         preferUserAuth: true
     };
     
