@@ -1,0 +1,83 @@
+variable "project_id" {
+  description = "GCP project ID"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+}
+
+variable "cloud_build_sa" {
+  description = "Cloud Build service account email"
+  type        = string
+}
+
+locals {
+  common_labels = {
+    environment = var.environment
+    managed-by  = "terraform"
+    component   = "service-accounts"
+  }
+}
+
+resource "google_service_account" "backend" {
+  project      = var.project_id
+  account_id   = "${var.environment}-backend-sa"
+  display_name = "${title(var.environment)} Backend Runtime SA"
+  description  = "Service account for backend Cloud Run service in ${var.environment}"
+}
+
+resource "google_service_account" "frontend" {
+  project      = var.project_id
+  account_id   = "${var.environment}-frontend-sa"
+  display_name = "${title(var.environment)} Frontend Runtime SA"
+  description  = "Service account for frontend Cloud Run service in ${var.environment}"
+}
+
+# IAM bindings
+resource "google_service_account_iam_member" "cb_backend_impersonate" {
+  service_account_id = google_service_account.backend.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${var.cloud_build_sa}"
+}
+
+resource "google_service_account_iam_member" "cb_frontend_impersonate" {
+  service_account_id = google_service_account.frontend.name
+  role               = "roles/iam.serviceAccountUser" 
+  member             = "serviceAccount:${var.cloud_build_sa}"
+}
+
+# Backend permissions
+resource "google_project_iam_member" "backend_firestore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
+resource "google_project_iam_member" "backend_tasks_publisher" {
+  project = var.project_id
+  role    = "roles/cloudtasks.enqueuer"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
+# Outputs
+output "backend_email" {
+  description = "Backend service account email"
+  value       = google_service_account.backend.email
+}
+
+output "frontend_email" {
+  description = "Frontend service account email"
+  value       = google_service_account.frontend.email
+}
+
+output "backend_name" {
+  description = "Backend service account name"
+  value       = google_service_account.backend.name
+}
+
+output "frontend_name" {
+  description = "Frontend service account name"
+  value       = google_service_account.frontend.name
+}

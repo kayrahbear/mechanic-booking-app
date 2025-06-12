@@ -1,0 +1,7 @@
+# Remove hardcoded bucket, use backend config instead
+terraform {
+  backend "gcs" {
+    # Configure via: terraform init -backend-config="bucket=tfstate-auto-mech-booking-${env}"
+    # Or use terraform workspaces
+  }
+}
