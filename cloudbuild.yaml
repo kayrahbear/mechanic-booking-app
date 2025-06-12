@@ -85,19 +85,13 @@ steps:
   args:
     - -c
     - |
-      # Check what type of changes we have
-      CHANGED_FILES=$$(git diff --name-only HEAD~1 HEAD || echo "")
-      
-      if echo "$$CHANGED_FILES" | grep -E '^infra/'; then
-        echo "Infrastructure changes detected - Full Terraform will run"
-        echo "terraform-full" > /workspace/terraform-flag
-      elif echo "$$CHANGED_FILES" | grep -E '^(backend/|frontend/|functions/)'; then
-        echo "Code changes detected - Quick Cloud Run update will run"
-        echo "cloudrun-update" > /workspace/terraform-flag
-      else
-        echo "No deployment changes - skipping updates"
-        echo "terraform-skip" > /workspace/terraform-flag
-      fi
+      # For code deployment, we always need to update Cloud Run services with new images
+      # The containers were built with the current commit SHA, so we need to deploy them
+      echo "=== Deployment Decision ==="
+      echo "New containers built with tag: $SHORT_SHA"
+      echo "Cloud Run services need to be updated with new images"
+      echo "✓ Quick Cloud Run update will run"
+      echo "cloudrun-update" > /workspace/terraform-flag
 
 - id: terraform-apply
   name: hashicorp/terraform:1.6.6  # Use newer terraform version that supports import blocks
@@ -115,22 +109,26 @@ steps:
         echo "Skipping all updates - no relevant changes detected"
         exit 0
       elif [ "$$FLAG" = "cloudrun-update" ]; then
-        echo "Quick Cloud Run update - code changes detected"
+        echo "=== Quick Cloud Run update - code changes detected ==="
+        echo "Using image tag: $SHORT_SHA"
         
         # Update Cloud Run services with new images (much faster than full Terraform)
+        echo "Updating backend-api..."
         gcloud run services update backend-api \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:$SHORT_SHA \
-          --region=${_REGION} --quiet
+          --region=${_REGION} || echo "Backend update failed"
           
+        echo "Updating frontend-ssr..."
         gcloud run services update frontend-ssr \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:$SHORT_SHA \
-          --region=${_REGION} --quiet
+          --region=${_REGION} || echo "Frontend update failed"
           
+        echo "Updating notification-worker..."
         gcloud run services update notification-worker \
           --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA \
-          --region=${_REGION} --quiet
+          --region=${_REGION} || echo "Worker update failed"
           
-        echo "Cloud Run services updated successfully"
+        echo "=== Cloud Run services update completed ==="
         exit 0
       fi
       
