@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background-color: #3f51b5; color: white; padding: 30px 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Booking Request Received</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hi {{ customer_name }},</p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 20px;">
+                Thank you for choosing our mobile mechanic service! We've received your booking request and will review it shortly.
+            </p>
+            
+            <!-- Booking Details -->
+            <div style="background-color: #f8f9fa; border-left: 4px solid #3f51b5; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #3f51b5; font-size: 18px;">Booking Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Service:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ service_name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Date:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ appointment_date }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Time:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ appointment_time }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Location:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ customer_address }}<br>{{ customer_city }}, {{ customer_state }} {{ customer_zip }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Booking ID:</td>
+                        <td style="padding: 8px 0; color: #333;">#{{ booking_id }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Next Steps -->
+            <div style="background-color: #e3f2fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #1976d2; font-size: 18px;">What's Next?</h3>
+                <p style="margin: 0; color: #333; line-height: 1.6;">
+                    We'll review your request and confirm your appointment within 24 hours. You'll receive another email once your booking is confirmed with additional details and our mechanic's contact information.
+                </p>
+            </div>
+            
+            {% if notes %}
+            <div style="margin: 20px 0;">
+                <h4 style="color: #555; margin-bottom: 10px;">Your Notes:</h4>
+                <p style="color: #333; font-style: italic; background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin: 0;">
+                    "{{ notes }}"
+                </p>
+            </div>
+            {% endif %}
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-top: 30px;">
+                If you have any questions or need to make changes to your booking, please contact us as soon as possible.
+            </p>
+            
+            <p style="font-size: 16px; color: #333; margin-bottom: 0;">
+                Thank you for choosing our service!<br>
+                <strong>Your Mobile Mechanic Team</strong>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0; font-size: 14px; color: #6c757d;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -37,6 +37,10 @@ export default function BookingForm({
     const [customerName, setCustomerName] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
+    const [customerAddress, setCustomerAddress] = useState('');
+    const [customerCity, setCustomerCity] = useState('');
+    const [customerState, setCustomerState] = useState('');
+    const [customerZip, setCustomerZip] = useState('');
     const [notes, setNotes] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -143,6 +147,11 @@ const loadAvailableSlots = useCallback(async () => {
             return;
         }
 
+        if (!customerAddress || !customerCity || !customerState || !customerZip) {
+            setError('Please provide your complete address');
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             setError('');
@@ -180,6 +189,10 @@ const loadAvailableSlots = useCallback(async () => {
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_phone: customerPhone || undefined,
+                customer_address: customerAddress,
+                customer_city: customerCity,
+                customer_state: customerState,
+                customer_zip: customerZip,
                 notes: notes || undefined,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -320,6 +333,74 @@ const loadAvailableSlots = useCallback(async () => {
                                 className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                 disabled={isLoadingProfile}
                             />
+                        </div>
+                    </div>
+
+                    {/* Service Address */}
+                    <div>
+                        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-3">Service Location</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="address" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                    Street Address*
+                                </label>
+                                <input
+                                    id="address"
+                                    type="text"
+                                    value={customerAddress}
+                                    onChange={(e) => setCustomerAddress(e.target.value)}
+                                    placeholder="123 Main Street"
+                                    className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                    required
+                                />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label htmlFor="city" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        City*
+                                    </label>
+                                    <input
+                                        id="city"
+                                        type="text"
+                                        value={customerCity}
+                                        onChange={(e) => setCustomerCity(e.target.value)}
+                                        placeholder="City"
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label htmlFor="state" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        State*
+                                    </label>
+                                    <input
+                                        id="state"
+                                        type="text"
+                                        value={customerState}
+                                        onChange={(e) => setCustomerState(e.target.value)}
+                                        placeholder="State"
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label htmlFor="zip" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        ZIP Code*
+                                    </label>
+                                    <input
+                                        id="zip"
+                                        type="text"
+                                        value={customerZip}
+                                        onChange={(e) => setCustomerZip(e.target.value)}
+                                        placeholder="12345"
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        required
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 

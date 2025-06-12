@@ -37,6 +37,10 @@ export interface Booking {
     customer_name: string;
     customer_email: string;
     customer_phone?: string;
+    customer_address: string;
+    customer_city: string;
+    customer_state: string;
+    customer_zip: string;
     notes?: string;
     status: BookingStatus;
     calendar_event_id?: string;
@@ -68,4 +72,4 @@ export interface AvailabilityDay {
     day: string;
     slots: Record<string, SlotStatus>;
     mechanics: Record<string, boolean>;
-} 
+}

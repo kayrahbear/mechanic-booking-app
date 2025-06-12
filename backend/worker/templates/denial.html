@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Update</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background-color: #ef4444; color: white; padding: 30px 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Booking Update</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hi {{ customer_name }},</p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 20px;">
+                We appreciate your interest in our mobile mechanic service. Unfortunately, we're unable to accommodate your booking request at the requested time.
+            </p>
+            
+            <!-- Original Request Details -->
+            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #ef4444; font-size: 18px;">Original Request</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Service:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ service_name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Requested Date:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ appointment_date }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Requested Time:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ appointment_time }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Location:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ customer_address }}<br>{{ customer_city }}, {{ customer_state }} {{ customer_zip }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Booking ID:</td>
+                        <td style="padding: 8px 0; color: #333;">#{{ booking_id }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            {% if notes %}
+            <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #856404;">Reason:</h4>
+                <p style="margin: 0; color: #333; line-height: 1.6;">
+                    {{ notes }}
+                </p>
+            </div>
+            {% endif %}
+            
+            <!-- Alternative Options -->
+            <div style="background-color: #e3f2fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #1976d2; font-size: 18px;">📅 Let's Find Another Time</h3>
+                <p style="margin: 0 0 15px 0; color: #333; line-height: 1.6;">
+                    We'd still love to help you with your vehicle! Here are some options:
+                </p>
+                <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.6;">
+                    <li>Check our availability for different dates and times</li>
+                    <li>Consider scheduling for the following week</li>
+                    <li>Contact us directly to discuss flexible scheduling options</li>
+                </ul>
+            </div>
+            
+            <!-- Book Again Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ booking_url }}" 
+                   style="display: inline-block; background-color: #3f51b5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    🔄 Book Another Time
+                </a>
+            </div>
+            
+            <!-- Contact Information -->
+            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #555; font-size: 18px;">📞 Need Help?</h3>
+                <p style="margin: 0; color: #333; line-height: 1.6;">
+                    If you have questions about scheduling or need assistance finding a suitable time, please don't hesitate to contact us. We're here to help!
+                </p>
+            </div>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-top: 30px;">
+                We apologize for any inconvenience and look forward to serving you soon.
+            </p>
+            
+            <p style="font-size: 16px; color: #333; margin-bottom: 0;">
+                Thank you for your understanding,<br>
+                <strong>Your Mobile Mechanic Team</strong>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0; font-size: 14px; color: #6c757d;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

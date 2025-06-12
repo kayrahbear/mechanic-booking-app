@@ -9,7 +9,8 @@ NotificationType = Literal["confirmation", "approval", "denial", "reminder"]
 
 def prepare_email_notification_payload(
     booking: BookingOut, 
-    notification_type: NotificationType = "confirmation"
+    notification_type: NotificationType = "confirmation",
+    mechanic_phone: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Prepare an email notification payload for a booking.
@@ -17,6 +18,7 @@ def prepare_email_notification_payload(
     Args:
         booking: The booking details
         notification_type: Type of notification to send
+        mechanic_phone: Mechanic's phone number (for approval emails)
         
     Returns:
         Dictionary with email notification data
@@ -34,19 +36,31 @@ def prepare_email_notification_payload(
         template_id = "booking_reminder"
         subject = f"Appointment Reminder: {booking.service_name}"
     
+    # Base template data
+    template_data = {
+        "customer_name": booking.customer_name,
+        "customer_email": booking.customer_email,
+        "service_name": booking.service_name,
+        "appointment_date": booking.slot_start.strftime("%Y-%m-%d"),
+        "appointment_time": booking.slot_start.strftime("%H:%M"),
+        "customer_address": booking.customer_address,
+        "customer_city": booking.customer_city,
+        "customer_state": booking.customer_state,
+        "customer_zip": booking.customer_zip,
+        "booking_id": booking.id,
+        "booking_status": booking.status,
+        "notes": getattr(booking, "approval_notes", "") or booking.notes or ""
+    }
+    
+    # Add mechanic phone for approval emails
+    if notification_type == "approval" and mechanic_phone:
+        template_data["mechanic_phone"] = mechanic_phone
+    
     return {
         "to_email": booking.customer_email,
         "subject": subject,
         "template_id": template_id,
-        "template_data": {
-            "customer_name": booking.customer_name,
-            "service_name": booking.service_name,
-            "appointment_date": booking.slot_start.strftime("%Y-%m-%d"),
-            "appointment_time": booking.slot_start.strftime("%H:%M"),
-            "booking_id": booking.id,
-            "booking_status": booking.status,
-            "notes": getattr(booking, "approval_notes", "")
-        }
+        "template_data": template_data
     }
 
 def prepare_sms_notification_payload(
@@ -110,4 +124,4 @@ async def send_booking_notification(
     if task_name:
         logger.info(f"{notification_type.capitalize()} notification task enqueued for booking {booking.id}: {task_name}")
     else:
-        logger.error(f"Failed to enqueue {notification_type} notification for booking {booking.id}") 
+        logger.error(f"Failed to enqueue {notification_type} notification for booking {booking.id}")

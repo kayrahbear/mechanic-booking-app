@@ -309,10 +309,63 @@ async def approve_or_deny_booking(
             logger.error(f"Failed to delete calendar event: {str(e)}")
     
     # Send notification about approval/denial in the background
-    background_tasks.add_task(
-        send_booking_notification, 
-        booking_out, 
-        "approval" if result["approved"] else "denial"
-    )
+    # For approval emails, we need to get the mechanic's phone number
+    if result["approved"]:
+        # Get mechanic phone number from the database
+        try:
+            # Get the mechanic assigned to this booking
+            mechanic_id = updated_booking.get("mechanic_id")
+            if mechanic_id:
+                mechanic_ref = db.collection("mechanics").document(mechanic_id)
+                mechanic_doc = mechanic_ref.get()
+                if mechanic_doc.exists:
+                    mechanic_data = mechanic_doc.to_dict()
+                    mechanic_phone = mechanic_data.get("phone", "Contact main office")
+                else:
+                    mechanic_phone = "Contact main office"
+            else:
+                mechanic_phone = "Contact main office"
+            
+            # Send approval notification with mechanic phone
+            from ..notifications import prepare_email_notification_payload
+            
+            # Create custom notification payload with mechanic phone
+            email_payload = prepare_email_notification_payload(
+                booking_out, 
+                "approval", 
+                mechanic_phone
+            )
+            
+            # Create the full notification payload
+            notification_payload = {
+                "booking_id": booking_out.id,
+                "notification_type": "approval",
+                "email": email_payload,
+                "sms": None  # SMS not implemented yet
+            }
+            
+            # Enqueue the notification task
+            from ..tasks import enqueue_notification_task
+            background_tasks.add_task(
+                enqueue_notification_task,
+                booking_id=booking_out.id,
+                payload=notification_payload
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to send approval notification: {str(e)}")
+            # Fallback to regular notification without mechanic phone
+            background_tasks.add_task(
+                send_booking_notification, 
+                booking_out, 
+                "approval"
+            )
+    else:
+        # Send denial notification
+        background_tasks.add_task(
+            send_booking_notification, 
+            booking_out, 
+            "denial"
+        )
     
     return booking_out

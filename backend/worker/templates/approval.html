@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Confirmed</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background-color: #10b981; color: white; padding: 30px 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">🎉 Appointment Confirmed!</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hi {{ customer_name }},</p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 20px;">
+                Great news! Your appointment has been confirmed. Our mechanic will arrive at your location at the scheduled time.
+            </p>
+            
+            <!-- Confirmed Appointment Details -->
+            <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #10b981; font-size: 18px;">Confirmed Appointment</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Service:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ service_name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Date & Time:</td>
+                        <td style="padding: 8px 0; color: #333;"><strong>{{ appointment_date }} at {{ appointment_time }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Service Location:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ customer_address }}<br>{{ customer_city }}, {{ customer_state }} {{ customer_zip }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Mechanic Contact:</td>
+                        <td style="padding: 8px 0; color: #333;"><strong>{{ mechanic_phone }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Booking ID:</td>
+                        <td style="padding: 8px 0; color: #333;">#{{ booking_id }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Add to Calendar Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ calendar_link }}" 
+                   style="display: inline-block; background-color: #3f51b5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    📅 Add to Google Calendar
+                </a>
+            </div>
+            
+            <!-- Important Information -->
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #856404; font-size: 18px;">📋 Important Information</h3>
+                <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.6;">
+                    <li>Please ensure your vehicle is accessible at the scheduled time</li>
+                    <li>Have your keys ready for the mechanic</li>
+                    <li>If you need to reschedule, contact us at least 2 hours in advance</li>
+                    <li>Our mechanic will call you when they're on their way</li>
+                </ul>
+            </div>
+            
+            {% if notes %}
+            <div style="margin: 20px 0;">
+                <h4 style="color: #555; margin-bottom: 10px;">Service Notes:</h4>
+                <p style="color: #333; font-style: italic; background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin: 0;">
+                    "{{ notes }}"
+                </p>
+            </div>
+            {% endif %}
+            
+            <!-- Contact Information -->
+            <div style="background-color: #e3f2fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #1976d2; font-size: 18px;">📞 Need to Contact Us?</h3>
+                <p style="margin: 0; color: #333; line-height: 1.6;">
+                    <strong>Mechanic Direct:</strong> {{ mechanic_phone }}<br>
+                    <strong>Questions?</strong> Reply to this email or call our main line
+                </p>
+            </div>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-top: 30px;">
+                We're excited to help get your vehicle back in top shape! Thank you for choosing our mobile mechanic service.
+            </p>
+            
+            <p style="font-size: 16px; color: #333; margin-bottom: 0;">
+                Best regards,<br>
+                <strong>Your Mobile Mechanic Team</strong>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0; font-size: 14px; color: #6c757d;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

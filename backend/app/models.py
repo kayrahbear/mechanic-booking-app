@@ -44,6 +44,10 @@ class BookingCreate(BaseModel):
     customer_name: str
     customer_email: EmailStr
     customer_phone: Optional[str] = None
+    customer_address: str
+    customer_city: str
+    customer_state: str
+    customer_zip: str
     notes: Optional[str] = None
 
 class BookingStatus(str, Enum):
@@ -84,6 +88,7 @@ class Mechanic(BaseModel):
     id: str
     name: str
     email: EmailStr
+    phone: str
     # Removed specialties field as there will only be a single mechanic who can perform all services
     schedule: MechanicSchedule
     active: bool = True

@@ -5,6 +5,12 @@ import os
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
+from email_service import (
+    send_confirmation_email, 
+    send_approval_email, 
+    send_denial_email,
+    EmailServiceError
+)
 
 # Configure logging
 logging.basicConfig(
@@ -38,8 +44,8 @@ async def process_notification(request: Request):
     
     This endpoint:
     1. Parses the notification task payload
-    2. Logs the notification details (stub implementation for Task 10)
-    3. Will be expanded in Task 14 to actually send emails/SMS
+    2. Sends actual emails using SMTP2GO
+    3. Returns HTTP 200 to acknowledge the task
     
     Returns HTTP 200 to acknowledge the task.
     """
@@ -53,23 +59,48 @@ async def process_notification(request: Request):
         # Log the notification details
         logger.info(f"Processing notification for booking {notification.booking_id}")
         logger.info(f"Notification type: {notification.notification_type}")
-        logger.info(f"Notification data: {notification.data}")
         
-        # Extract email and SMS details
+        # Extract email data
         email_data = notification.data.get("email")
-        sms_data = notification.data.get("sms")
+        if not email_data:
+            logger.warning(f"No email data found for booking {notification.booking_id}")
+            return {"status": "success", "message": "No email to send"}
         
-        if email_data:
-            logger.info(f"Would send email to: {email_data.get('to_email')}")
-            logger.info(f"Email subject: {email_data.get('subject')}")
+        # Get template data from email payload
+        template_data = email_data.get("template_data", {})
         
-        if sms_data:
-            logger.info(f"Would send SMS to: {sms_data.get('to_phone')}")
-            logger.info(f"SMS message: {sms_data.get('message')}")
+        # Send email based on notification type
+        email_sent = False
+        notification_type = notification.data.get("notification_type", "confirmation")
         
-        # For Task 10, we just log the notification (actual sending in Task 14)
-        return {"status": "success", "message": "Notification processed"}
+        try:
+            if notification_type == "confirmation":
+                email_sent = send_confirmation_email(template_data)
+            elif notification_type == "approval":
+                # For approval emails, we need the mechanic phone number
+                # This should be included in the template_data by the backend
+                mechanic_phone = template_data.get("mechanic_phone", "Contact main office")
+                email_sent = send_approval_email(template_data, mechanic_phone)
+            elif notification_type == "denial":
+                email_sent = send_denial_email(template_data)
+            else:
+                logger.warning(f"Unknown notification type: {notification_type}")
+                return {"status": "error", "message": f"Unknown notification type: {notification_type}"}
+            
+            if email_sent:
+                logger.info(f"Email sent successfully for booking {notification.booking_id}")
+                return {"status": "success", "message": "Email sent successfully"}
+            else:
+                logger.error(f"Failed to send email for booking {notification.booking_id}")
+                raise HTTPException(status_code=500, detail="Email sending failed")
+                
+        except EmailServiceError as e:
+            logger.error(f"Email service error for booking {notification.booking_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Email service error: {str(e)}")
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in request body: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid JSON in request body")
     except Exception as e:
         logger.error(f"Error processing notification: {str(e)}")
         # Return 500 to trigger a retry
@@ -81,4 +112,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8080)),
         reload=os.environ.get("ENV", "production") != "production",
-    ) 
+    )

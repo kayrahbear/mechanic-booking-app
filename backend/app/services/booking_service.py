@@ -13,6 +13,7 @@ from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus
 from ..firestore import get_client
 from ..notifications import send_booking_notification
 from ..google_calendar import create_event
+from ..utils.service_area import validate_service_area, ServiceAreaError
 from google.api_core.exceptions import GoogleAPIError
 
 logger = logging.getLogger(__name__)
@@ -120,19 +121,25 @@ class BookingService:
     @tenacity.retry(**retry_config)
     async def create_booking(self, payload: BookingCreate) -> BookingOut:
         """Create a new booking with transactional integrity"""
-        # 1. Get service details
+        # 1. Validate service area
+        try:
+            validate_service_area(payload.customer_zip)
+        except ServiceAreaError as e:
+            raise BookingError(str(e))
+        
+        # 2. Get service details
         service = self.get_service(payload.service_id)
         
-        # 2. Validate availability and get mechanic
+        # 3. Validate availability and get mechanic
         mechanic_id = await self.validate_availability(payload, service.get("minutes", 30))
         if mechanic_id:
             payload.mechanic_id = mechanic_id
         
-        # 3. Create booking data
+        # 4. Create booking data
         booking_data = self.create_booking_data(payload, service)
         booking_ref = self.db.collection("bookings").document()
         
-        # 4. Execute transaction with read-before-write pattern
+        # 5. Execute transaction with read-before-write pattern
         @firestore.transactional
         def txn(transaction: firestore.Transaction):
             # READS FIRST: Read availability document before any writes
@@ -165,7 +172,7 @@ class BookingService:
         # Execute transaction
         txn(self.db.transaction())
         
-        # 5. Create response object
+        # 6. Create response object
         booking_id = booking_ref.id
         booking_doc = self.db.collection("bookings").document(booking_id).get()
         
@@ -179,7 +186,7 @@ class BookingService:
         
         booking_out = BookingOut(id=booking_id, **response_data)
         
-        # 6. Add calendar event (best effort)
+        # 7. Add calendar event (best effort)
         try:
             calendar_event_id = create_event(booking_out)
             self.db.collection("bookings").document(booking_id).update({
