@@ -102,15 +102,7 @@ def enqueue_notification_task(
         timestamp.FromDatetime(d)
         task['schedule_time'] = timestamp
     
-    # Add retry config with HTTP 30-second deadline
-    retry_config = {
-        'max_attempts': 5,
-        'max_retry_duration': duration_pb2.Duration(seconds=30 * 60),  # 30 minutes
-        'min_backoff': duration_pb2.Duration(seconds=1),
-        'max_backoff': duration_pb2.Duration(seconds=60),
-        'max_doublings': 5,
-    }
-    task['retry_config'] = retry_config
+    # Note: retry_config is configured on the queue, not individual tasks
     
     # Create a task with a name based on the booking ID for idempotency
     task_name = f"booking-notification-{booking_id}"
