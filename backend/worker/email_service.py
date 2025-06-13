@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # SMTP2GO Configuration
 SMTP_SERVER = "mail.smtp2go.com"
-SMTP_PORT = 587
+SMTP_PORT = 2525
 
 def get_email_config():
     """Get email configuration from Secret Manager with fallback to environment variables."""
