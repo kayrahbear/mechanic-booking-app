@@ -97,6 +97,11 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
     """
     config = get_email_config()
     
+    # Debug logging for authentication (log username but not password)
+    logger.info(f"SMTP Configuration - Username: {config['smtp_username'][:5]}...{config['smtp_username'][-3:] if len(config['smtp_username']) > 8 else '[MASKED]'}")
+    logger.info(f"SMTP Configuration - Password length: {len(config['smtp_password']) if config['smtp_password'] else 0}")
+    logger.info(f"SMTP Configuration - From email: {config['from_email']}")
+    
     if not config['smtp_username'] or not config['smtp_password']:
         raise EmailServiceError("SMTP2GO credentials not configured")
     

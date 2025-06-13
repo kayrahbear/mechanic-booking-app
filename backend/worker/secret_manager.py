@@ -67,14 +67,16 @@ def get_secret_or_env(secret_name: str, env_var_name: str, default: Optional[str
     """
     try:
         # Try Secret Manager first
-        return get_secret(secret_name)
+        value = get_secret(secret_name)
+        logger.info(f"Retrieved {secret_name} from Google Cloud Secret Manager")
+        return value
     except Exception as e:
         logger.warning(f"Could not retrieve secret {secret_name}: {str(e)}")
         
         # Fall back to environment variable
         env_value = os.environ.get(env_var_name)
         if env_value:
-            logger.info(f"Using environment variable {env_var_name} as fallback")
+            logger.info(f"Using environment variable {env_var_name} as fallback for {secret_name}")
             return env_value
         
         # Use default if provided
