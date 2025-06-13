@@ -5,6 +5,7 @@ Validates customer addresses against serviceable ZIP codes.
 import os
 import logging
 from typing import List, Set
+from .secret_manager import get_secret_or_env
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +15,14 @@ class ServiceAreaError(Exception):
 
 def get_service_area_zips() -> Set[str]:
     """
-    Get the list of serviceable ZIP codes from environment variable.
+    Get the list of serviceable ZIP codes from Secret Manager or environment variable.
     
     Returns:
         Set of ZIP codes that are within the service area
     """
-    service_area_env = os.environ.get("SERVICE_AREA_ZIPS", "")
+    service_area_env = get_secret_or_env("SERVICE_AREA_ZIPS", "SERVICE_AREA_ZIPS", "")
     if not service_area_env:
-        logger.warning("SERVICE_AREA_ZIPS environment variable not set, allowing all ZIP codes")
+        logger.warning("SERVICE_AREA_ZIPS not configured in Secret Manager or environment, allowing all ZIP codes")
         return set()
     
     # Parse comma-separated ZIP codes and clean them
@@ -31,7 +32,7 @@ def get_service_area_zips() -> Set[str]:
         if cleaned_zip:
             zip_codes.add(cleaned_zip)
     
-    logger.info(f"Loaded {len(zip_codes)} serviceable ZIP codes")
+    logger.info(f"Loaded {len(zip_codes)} serviceable ZIP codes from Secret Manager")
     return zip_codes
 
 def validate_service_area(customer_zip: str) -> bool:

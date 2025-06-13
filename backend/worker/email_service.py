@@ -10,16 +10,22 @@ from jinja2 import Environment, FileSystemLoader
 from urllib.parse import urlencode
 from datetime import datetime
 from typing import Dict, Any, Optional
+from secret_manager import get_secret_or_env
 
 logger = logging.getLogger(__name__)
 
 # SMTP2GO Configuration
 SMTP_SERVER = "mail.smtp2go.com"
 SMTP_PORT = 587
-SMTP_USERNAME = os.environ.get("SMTP2GO_USERNAME")
-SMTP_PASSWORD = os.environ.get("SMTP2GO_PASSWORD")
-FROM_EMAIL = os.environ.get("FROM_EMAIL", "noreply@yourmechanicservice.com")
-BOOKING_URL = os.environ.get("BOOKING_URL", "https://yourdomain.com/book")
+
+def get_email_config():
+    """Get email configuration from Secret Manager with fallback to environment variables."""
+    return {
+        'smtp_username': get_secret_or_env("SMTP2GO_USERNAME", "SMTP2GO_USERNAME"),
+        'smtp_password': get_secret_or_env("SMTP2GO_PASSWORD", "SMTP2GO_PASSWORD"),
+        'from_email': get_secret_or_env("FROM_EMAIL", "FROM_EMAIL", "noreply@yourmechanicservice.com"),
+        'booking_url': get_secret_or_env("BOOKING_URL", "BOOKING_URL", "https://yourdomain.com/book")
+    }
 
 # Initialize Jinja2 environment
 template_env = Environment(loader=FileSystemLoader('templates'))
@@ -89,14 +95,16 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
     Raises:
         EmailServiceError: If email sending fails
     """
-    if not SMTP_USERNAME or not SMTP_PASSWORD:
+    config = get_email_config()
+    
+    if not config['smtp_username'] or not config['smtp_password']:
         raise EmailServiceError("SMTP2GO credentials not configured")
     
     try:
         # Create message
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = FROM_EMAIL
+        msg['From'] = config['from_email']
         msg['To'] = to_email
         
         # Add text part if provided
@@ -111,7 +119,7 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
         # Send email via SMTP2GO
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.login(config['smtp_username'], config['smtp_password'])
             server.send_message(msg)
         
         logger.info(f"Email sent successfully to {to_email}")
@@ -202,9 +210,11 @@ def send_denial_email(booking_data: Dict[str, Any]) -> bool:
         True if email was sent successfully
     """
     try:
+        config = get_email_config()
+        
         # Add booking URL to template data
         template_data = booking_data.copy()
-        template_data['booking_url'] = BOOKING_URL
+        template_data['booking_url'] = config['booking_url']
         
         subject = f"Booking Update - {booking_data['service_name']}"
         html_content = render_email_template('denial.html', template_data)

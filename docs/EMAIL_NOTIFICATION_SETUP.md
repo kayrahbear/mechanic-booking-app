@@ -57,13 +57,13 @@ Add these environment variables to your deployment:
 # SMTP2GO Configuration
 SMTP2GO_USERNAME=your_smtp2go_username
 SMTP2GO_PASSWORD=your_smtp2go_password
-FROM_EMAIL=noreply@yourdomain.com
+FROM_EMAIL=noreply@monkeyboigarage.com
 
 # Service Area Configuration
 SERVICE_AREA_ZIPS=12345,67890,54321  # Comma-separated list of serviceable ZIP codes
 
 # Optional Configuration
-BOOKING_URL=https://yourdomain.com/book  # For rebooking links in denial emails
+BOOKING_URL=https://monkeyboigarage.com/book  # For rebooking links in denial emails
 ```
 
 ## SMTP2GO Setup Steps
@@ -119,7 +119,7 @@ The service area is configured via the `SERVICE_AREA_ZIPS` environment variable:
 
 ```bash
 # Example: Service area covering multiple ZIP codes
-SERVICE_AREA_ZIPS=12345,67890,54321,98765,11111
+SERVICE_AREA_ZIPS="37013, 37014, 37016, 37020, 37027, 37031, 37034, 37037, 37046, 37060, 37064, 37066, 37067, 37069, 37072, 37075, 37076, 37080, 37085, 37087, 37090, 37115, 37118, 37122, 37127, 37128, 37129, 37130, 37132, 37135, 37138, 37143, 37149, 37153, 37167, 37174, 37179, 37180, 37184, 37189, 37201, 37203, 37204, 37205, 37206, 37207, 37208, 37209, 37210, 37211, 37212, 37213, 37214, 37215, 37216, 37217, 37218, 37219, 37220, 37221, 37228, 37232, 37238"
 
 # For development (allows all ZIP codes):
 # Leave SERVICE_AREA_ZIPS empty or unset
