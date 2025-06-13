@@ -104,18 +104,11 @@ def enqueue_notification_task(
     
     # Note: retry_config is configured on the queue, not individual tasks
     
-    # Create a task with a name based on the booking ID for idempotency
-    task_name = f"booking-notification-{booking_id}"
-    task_path = create_task_name(parent, CLOUD_TASKS_QUEUE, task_name)
-    
-    # Create the task
+    # Create the task (without specific name for now to avoid API issues)
     try:
         response = client.create_task(
-            request={
-                "parent": parent,
-                "task": task,
-                "task_id": task_name
-            }
+            parent=parent,
+            task=task
         )
         logger.info(f"Task {response.name} created successfully")
         return response.name
