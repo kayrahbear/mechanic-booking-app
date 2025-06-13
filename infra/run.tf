@@ -181,10 +181,10 @@ resource "google_cloud_run_v2_service" "worker" {
   ]
 }
 
-# Allow Cloud Tasks to invoke the worker
+# Allow Cloud Tasks to invoke the worker (unauthenticated since it's internal-only)
 resource "google_cloud_run_service_iam_member" "cloudtasks_calls_worker" {
   location = google_cloud_run_v2_service.worker.location
   service  = google_cloud_run_v2_service.worker.name
   role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-cloudtasks.iam.gserviceaccount.com"
+  member   = "allUsers"
 }
