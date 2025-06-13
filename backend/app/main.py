@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import api_router
 from .config import settings
+from .debug_secrets import router as debug_router
 
 app = FastAPI(
     title="Mechanic Booking API", 
@@ -19,3 +20,4 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(debug_router)
