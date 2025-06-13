@@ -92,9 +92,6 @@ def enqueue_notification_task(
                 'notification_type': 'booking_created',
                 'data': payload
             }).encode(),
-            'oidc_token': {
-                'service_account_email': "service-518102829592@gcp-sa-cloudtasks.iam.gserviceaccount.com"
-            }
         }
     }
     
