@@ -52,7 +52,7 @@ steps:
   args: [
     'build','-t',
     '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:$SHORT_SHA',
-    '--cache-from', '${_REGION}-docker.pkg.dev/$PROJECT_ID/backend-repo/worker:latest',
+    '--no-cache',
     '.'
   ]
 
@@ -85,13 +85,12 @@ steps:
   args:
     - -c
     - |
-      # For code deployment, we always need to update Cloud Run services with new images
-      # The containers were built with the current commit SHA, so we need to deploy them
+      # Force full terraform run for secret manager IAM changes
       echo "=== Deployment Decision ==="
-      echo "New containers built with tag: $SHORT_SHA"
-      echo "Cloud Run services need to be updated with new images"
-      echo "✓ Quick Cloud Run update will run"
-      echo "cloudrun-update" > /workspace/terraform-flag
+      echo "New containers built with tag: $SHORT_SHA" 
+      echo "Infrastructure changes detected - running full Terraform"
+      echo "✓ Full Terraform apply will run"
+      echo "terraform-full" > /workspace/terraform-flag
 
 - id: cloudrun-update
   name: gcr.io/cloud-builders/gcloud

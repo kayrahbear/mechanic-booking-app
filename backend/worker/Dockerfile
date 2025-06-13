@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the worker code
 COPY main.py .
+COPY email_service.py .
+COPY secret_manager.py .
+COPY templates/ ./templates/
 
 # Configure the container
 ENV PORT=8080
