@@ -85,12 +85,12 @@ steps:
   args:
     - -c
     - |
-      # Force full terraform run for secret manager IAM changes
+      # Skip terraform - only update Cloud Run services
       echo "=== Deployment Decision ==="
       echo "New containers built with tag: $SHORT_SHA" 
-      echo "Infrastructure changes detected - running full Terraform"
-      echo "✓ Full Terraform apply will run"
-      echo "terraform-full" > /workspace/terraform-flag
+      echo "Skipping Terraform - only updating Cloud Run services"
+      echo "✓ Quick Cloud Run update will run"
+      echo "cloudrun-update" > /workspace/terraform-flag
 
 - id: cloudrun-update
   name: gcr.io/cloud-builders/gcloud
