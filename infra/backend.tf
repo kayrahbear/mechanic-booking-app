@@ -52,7 +52,7 @@ resource "google_secret_manager_secret_iam_member" "calendar_sa_reader" {
 
 # Allow backend SA to impersonate Cloud Tasks service account for OIDC authentication
 resource "google_service_account_iam_member" "backend_impersonate_cloudtasks" {
-  service_account_id = "projects/${var.project_id}/serviceAccounts/service-${data.google_project.this.number}@gcp-sa-cloudtasks.iam.gserviceaccount.com"
+  service_account_id = "service-${data.google_project.this.number}@gcp-sa-cloudtasks.iam.gserviceaccount.com"
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.backend_sa.email}"
 }
