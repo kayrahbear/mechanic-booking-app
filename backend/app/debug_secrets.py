@@ -19,8 +19,8 @@ async def debug_secrets():
         
         client = secretmanager.SecretManagerServiceClient()
         
-        # Test accessing SERVICE_AREA_ZIPS
-        secret_name = f"projects/{project_id}/secrets/SERVICE_AREA_ZIPS/versions/latest"
+        # Test accessing GOOGLE_CLIENT_ID first
+        secret_name = f"projects/{project_id}/secrets/GOOGLE_CLIENT_ID/versions/latest"
         
         response = client.access_secret_version(request={"name": secret_name})
         secret_value = response.payload.data.decode("UTF-8")
