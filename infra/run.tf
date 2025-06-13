@@ -124,7 +124,7 @@ resource "google_cloud_run_v2_service" "worker" {
 
     # ───── container ─────
     containers {
-      image = local.backend_image
+      image = local.worker_image
 
       # normal envs …
       env {

@@ -190,23 +190,8 @@ steps:
         terraform import google_cloud_run_v2_service.worker "${_REGION}/notification-worker" || true
       fi
 
-      if terraform state list google_secret_manager_secret.sendgrid &>/dev/null; then
-        echo "SendGrid secret already imported."
-      else
-        terraform import google_secret_manager_secret.sendgrid "projects/${PROJECT_ID}/secrets/SENDGRID_KEY" || true
-      fi
-
-      if terraform state list google_secret_manager_secret.twilio &>/dev/null; then
-        echo "Twilio secret already imported."
-      else
-        terraform import google_secret_manager_secret.twilio "projects/${PROJECT_ID}/secrets/TWILIO_SID" || true
-      fi
-
-      if terraform state list google_secret_manager_secret.firebase_web_config &>/dev/null; then
-        echo "Firebase web config secret already imported."
-      else
-        terraform import google_secret_manager_secret.firebase_web_config "projects/${PROJECT_ID}/secrets/firebase-web-config" || true
-      fi
+      # Skip importing secrets that don't exist in configuration
+      echo "Skipping secret imports - using data sources instead"
 
       # Import module resources to avoid conflicts
       if terraform state list module.backend_service.google_cloud_run_service.this &>/dev/null; then
@@ -248,11 +233,8 @@ steps:
         terraform state rm google_secret_manager_secret.calendar_sa_key || true
       fi
 
-      # Remove managed secrets from state since we now use data sources
-      echo "Removing any managed secrets from state since we're now using data sources..."
-      for secret_name in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET firebase-web-config calendar-sync-sa; do
-        terraform state rm "module.secrets.google_secret_manager_secret.this[\"$secret_name\"]" || echo "Secret $secret_name not in state or already removed"
-      done
+      # Skip secret state removal - secrets are managed via data sources
+      echo "Secrets are managed via data sources - no state removal needed"
 
       # Apply changes with -refresh-only first to sync state, then apply actual changes
       terraform apply -refresh-only -auto-approve -input=false \

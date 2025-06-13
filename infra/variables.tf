@@ -57,3 +57,8 @@ variable "cloud_run_config" {
     max_instances = 10
   }
 }
+
+variable "cloud_build_sa" {
+  description = "Cloud Build service account email"
+  type        = string
+}

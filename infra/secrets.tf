@@ -62,34 +62,35 @@ resource "google_secret_manager_secret_iam_member" "back_read_calendar_sa" {
 # The calendar-sync-sa secret is now managed through the secrets module in main.tf
 
 # Allow worker service account to access email notification secrets
+# Note: Worker uses the backend service account
 resource "google_secret_manager_secret_iam_member" "worker_read_smtp_username" {
   secret_id = module.secrets.secret_ids["SMTP2GO_USERNAME"]
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "worker_read_smtp_password" {
   secret_id = module.secrets.secret_ids["SMTP2GO_PASSWORD"]
   role      = "roles/secretmanager.secretAccessor" 
-  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "worker_read_from_email" {
   secret_id = module.secrets.secret_ids["FROM_EMAIL"]
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "worker_read_service_area_zips" {
   secret_id = module.secrets.secret_ids["SERVICE_AREA_ZIPS"]
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "worker_read_booking_url" {
   secret_id = module.secrets.secret_ids["BOOKING_URL"]
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+  member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
 # Allow backend service account to access SERVICE_AREA_ZIPS (needed for service area validation)
