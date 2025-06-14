@@ -90,12 +90,19 @@ steps:
   args:
     - -c
     - |
-      # Skip terraform - only update Cloud Run services
       echo "=== Deployment Decision ==="
-      echo "New containers built with tag: $SHORT_SHA" 
-      echo "Skipping Terraform - only updating Cloud Run services"
-      echo "✓ Quick Cloud Run update will run"
-      echo "cloudrun-update" > /workspace/terraform-flag
+      echo "New containers built with tag: $SHORT_SHA"
+      
+      # Check if there are any changes to infrastructure files
+      if git diff --name-only HEAD~1 HEAD | grep -E '^infra/|\.tf$|cloudbuild\.yaml$'; then
+        echo "Infrastructure changes detected - running full Terraform"
+        echo "✓ Full Terraform apply will run"
+        echo "terraform-full" > /workspace/terraform-flag
+      else
+        echo "No infrastructure changes - only updating Cloud Run services"
+        echo "✓ Quick Cloud Run update will run"
+        echo "cloudrun-update" > /workspace/terraform-flag
+      fi
 
 - id: cloudrun-update
   name: gcr.io/cloud-builders/gcloud
