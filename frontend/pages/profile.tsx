@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../lib/auth-context';
 import { getUserProfile, updateUserProfile } from '../lib/api';
+import VehicleManager from '../components/VehicleManager';
 
 export default function ProfilePage() {
     const { user, loading: authLoading } = useAuth();
@@ -91,60 +92,70 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md mx-auto bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
-                <h1 className="text-2xl font-bold mb-6 text-neutral-900 dark:text-white">Your Profile</h1>
+            <div className="max-w-4xl mx-auto space-y-8">
+                {/* Profile Information Section */}
+                <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
+                    <h1 className="text-2xl font-bold mb-6 text-neutral-900 dark:text-white">Your Profile</h1>
 
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-error dark:text-red-300 rounded-md">
-                        {error}
-                    </div>
-                )}
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-error dark:text-red-300 rounded-md">
+                            {error}
+                        </div>
+                    )}
 
-                {success && (
-                    <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md">
-                        Your profile has been updated successfully!
-                    </div>
-                )}
+                    {success && (
+                        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md">
+                            Your profile has been updated successfully!
+                        </div>
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                            Full Name*
-                        </label>
-                        <input
-                            id="name"
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
-                            required
-                        />
-                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                    Full Name*
+                                </label>
+                                <input
+                                    id="name"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                    required
+                                />
+                            </div>
 
-                    <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                            Phone Number
-                        </label>
-                        <input
-                            id="phone"
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
-                        />
-                    </div>
+                            <div>
+                                <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                    Phone Number
+                                </label>
+                                <input
+                                    id="phone"
+                                    type="tel"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                />
+                            </div>
+                        </div>
 
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="w-full bg-primary hover:bg-primary-dark dark:bg-accent dark:hover:bg-accent-dark text-white py-2 px-4 rounded-md disabled:opacity-70 transition-colors"
-                        >
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    </div>
-                </form>
+                        <div>
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="bg-primary hover:bg-primary-dark dark:bg-accent dark:hover:bg-accent-dark text-white py-2 px-4 rounded-md disabled:opacity-70 transition-colors"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {/* Vehicle Information Section */}
+                <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
+                    <VehicleManager />
+                </div>
             </div>
         </div>
     );
-} 
+}

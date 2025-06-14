@@ -41,6 +41,11 @@ export interface Booking {
     customer_city: string;
     customer_state: string;
     customer_zip: string;
+    // Vehicle information
+    vehicle_make?: string;
+    vehicle_model?: string;
+    vehicle_year?: number;
+    vehicle_vin?: string;
     notes?: string;
     status: BookingStatus;
     calendar_event_id?: string;

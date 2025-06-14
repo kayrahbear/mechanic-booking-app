@@ -48,6 +48,11 @@ class BookingCreate(BaseModel):
     customer_city: str
     customer_state: str
     customer_zip: str
+    # Vehicle information
+    vehicle_make: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    vehicle_year: Optional[int] = Field(None, ge=1980, le=2030)
+    vehicle_vin: Optional[str] = Field(None, min_length=17, max_length=17)
     notes: Optional[str] = None
 
 class BookingStatus(str, Enum):
@@ -122,6 +127,30 @@ class Mechanic(BaseModel):
     # Removed specialties field as there will only be a single mechanic who can perform all services
     schedule: MechanicSchedule
     active: bool = True
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+# Vehicle models
+class VehicleCreate(BaseModel):
+    make: str
+    model: str
+    year: int = Field(..., ge=1980, le=2030)
+    vin: Optional[str] = Field(None, min_length=17, max_length=17)
+
+class VehicleUpdate(BaseModel):
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = Field(None, ge=1980, le=2030)
+    vin: Optional[str] = Field(None, min_length=17, max_length=17)
+
+class Vehicle(BaseModel):
+    id: str
+    make: str
+    model: str
+    year: int
+    vin: Optional[str] = None
+    user_id: str
+    is_primary: bool = False
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

@@ -9,6 +9,15 @@ interface AvailabilitySlot {
     status: 'free' | 'booked' | 'blocked';
 }
 
+interface Vehicle {
+    id: string;
+    make: string;
+    model: string;
+    year: number;
+    vin?: string;
+    is_primary: boolean;
+}
+
 interface BookingFormProps {
     services: Service[];
     initialServiceId?: string;
@@ -42,8 +51,16 @@ export default function BookingForm({
     const [customerState, setCustomerState] = useState('');
     const [customerZip, setCustomerZip] = useState('');
     const [notes, setNotes] = useState('');
+    // Vehicle information
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [selectedVehicle, setSelectedVehicle] = useState('');
+    const [vehicleMake, setVehicleMake] = useState('');
+    const [vehicleModel, setVehicleModel] = useState('');
+    const [vehicleYear, setVehicleYear] = useState<number>(new Date().getFullYear());
+    const [vehicleVin, setVehicleVin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+    const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -91,9 +108,9 @@ const loadAvailableSlots = useCallback(async () => {
         }
     }, [selectedDate, selectedService, loadAvailableSlots]);
 
-    // Load user profile data to populate form
+    // Load user profile data and vehicles to populate form
     useEffect(() => {
-        async function loadUserProfile() {
+        async function loadUserProfileAndVehicles() {
             if (!user) return;
 
             try {
@@ -122,17 +139,65 @@ const loadAvailableSlots = useCallback(async () => {
                         setCustomerPhone(profile.phone);
                     }
                 }
+
+                // Load user's vehicles
+                setIsLoadingVehicles(true);
+                const token = await user.getIdToken();
+                const vehiclesResponse = await fetch('/api/vehicles/users/me/vehicles', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (vehiclesResponse.ok) {
+                    const vehiclesData = await vehiclesResponse.json();
+                    setVehicles(vehiclesData);
+
+                    // Auto-select primary vehicle if available
+                    const primaryVehicle = vehiclesData.find((v: Vehicle) => v.is_primary);
+                    if (primaryVehicle) {
+                        setSelectedVehicle(primaryVehicle.id);
+                        setVehicleMake(primaryVehicle.make);
+                        setVehicleModel(primaryVehicle.model);
+                        setVehicleYear(primaryVehicle.year);
+                        setVehicleVin(primaryVehicle.vin || '');
+                    }
+                }
             } catch (err) {
-                console.error('Error loading user profile:', err);
+                console.error('Error loading user profile and vehicles:', err);
                 // Don't show error to user, just fall back to manual entry
             } finally {
                 setIsLoadingProfile(false);
+                setIsLoadingVehicles(false);
             }
         }
 
-        loadUserProfile();
+        loadUserProfileAndVehicles();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]); // Only depend on user, ignore customerName to avoid infinite loops
+
+    // Handle vehicle selection
+    const handleVehicleSelection = (vehicleId: string) => {
+        setSelectedVehicle(vehicleId);
+        
+        if (vehicleId === 'manual') {
+            // Clear vehicle fields for manual entry
+            setVehicleMake('');
+            setVehicleModel('');
+            setVehicleYear(new Date().getFullYear());
+            setVehicleVin('');
+        } else if (vehicleId) {
+            // Auto-populate from selected vehicle
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (vehicle) {
+                setVehicleMake(vehicle.make);
+                setVehicleModel(vehicle.model);
+                setVehicleYear(vehicle.year);
+                setVehicleVin(vehicle.vin || '');
+            }
+        }
+    };
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -193,6 +258,11 @@ const loadAvailableSlots = useCallback(async () => {
                 customer_city: customerCity,
                 customer_state: customerState,
                 customer_zip: customerZip,
+                // Include vehicle information
+                vehicle_make: vehicleMake || undefined,
+                vehicle_model: vehicleModel || undefined,
+                vehicle_year: vehicleYear || undefined,
+                vehicle_vin: vehicleVin || undefined,
                 notes: notes || undefined,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -333,6 +403,119 @@ const loadAvailableSlots = useCallback(async () => {
                                 className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                 disabled={isLoadingProfile}
                             />
+                        </div>
+                    </div>
+
+                    {/* Vehicle Information */}
+                    <div>
+                        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-3">Vehicle Information</h3>
+                        <div className="space-y-4">
+                            {/* Vehicle Selection */}
+                            {vehicles.length > 0 && (
+                                <div>
+                                    <label htmlFor="vehicleSelect" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        Select Vehicle
+                                    </label>
+                                    <select
+                                        id="vehicleSelect"
+                                        value={selectedVehicle}
+                                        onChange={(e) => handleVehicleSelection(e.target.value)}
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        disabled={isLoadingVehicles}
+                                    >
+                                        <option value="">Select a vehicle</option>
+                                        {vehicles.map((vehicle) => (
+                                            <option key={vehicle.id} value={vehicle.id}>
+                                                {vehicle.year} {vehicle.make} {vehicle.model}
+                                                {vehicle.is_primary && ' (Primary)'}
+                                            </option>
+                                        ))}
+                                        <option value="manual">Enter vehicle details manually</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Manual Vehicle Entry */}
+                            {(selectedVehicle === 'manual' || vehicles.length === 0) && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label htmlFor="vehicleMake" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                            Make
+                                        </label>
+                                        <input
+                                            id="vehicleMake"
+                                            type="text"
+                                            value={vehicleMake}
+                                            onChange={(e) => setVehicleMake(e.target.value)}
+                                            placeholder="e.g., Honda"
+                                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="vehicleModel" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                            Model
+                                        </label>
+                                        <input
+                                            id="vehicleModel"
+                                            type="text"
+                                            value={vehicleModel}
+                                            onChange={(e) => setVehicleModel(e.target.value)}
+                                            placeholder="e.g., Civic"
+                                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="vehicleYear" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                            Year
+                                        </label>
+                                        <select
+                                            id="vehicleYear"
+                                            value={vehicleYear}
+                                            onChange={(e) => setVehicleYear(parseInt(e.target.value))}
+                                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        >
+                                            {Array.from({ length: 45 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                                <option key={year} value={year}>{year}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="vehicleVin" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                            VIN (optional)
+                                        </label>
+                                        <input
+                                            id="vehicleVin"
+                                            type="text"
+                                            value={vehicleVin}
+                                            onChange={(e) => setVehicleVin(e.target.value)}
+                                            maxLength={17}
+                                            placeholder="17-character VIN"
+                                            className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Display selected vehicle info */}
+                            {selectedVehicle && selectedVehicle !== 'manual' && (
+                                <div className="p-3 bg-neutral-50 dark:bg-neutral-700 rounded-md">
+                                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                        Selected: {vehicleYear} {vehicleMake} {vehicleModel}
+                                        {vehicleVin && ` (VIN: ${vehicleVin})`}
+                                    </p>
+                                </div>
+                            )}
+
+                            {vehicles.length === 0 && !isLoadingVehicles && (
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md">
+                                    <p className="text-sm">
+                                        No saved vehicles found. You can add vehicles to your profile for faster booking in the future.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

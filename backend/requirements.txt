@@ -41,3 +41,4 @@ uvicorn
 firebase-admin
 google-cloud-firestore
 tenacity  # For retry logic with exponential backoff
+httpx  # For async HTTP requests to NHTSA API
