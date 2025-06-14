@@ -2,10 +2,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from './auth-context';
 import ThemeToggle from '../components/ThemeToggle';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Nav() {
     const { user, logout, loading, userRole } = useAuth();
     const router = useRouter();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const handleLogout = async () => {
         const { success } = await logout();
@@ -16,6 +19,26 @@ export default function Nav() {
 
     const isActive = (path: string) => router.pathname === path;
     const startsWith = (path: string) => router.pathname.startsWith(path);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Get user's display name or email
+    const getUserDisplayName = () => {
+        if (!user) return '';
+        return user.displayName || user.email || 'User';
+    };
 
     return (
         <nav className="bg-neutral-50 dark:bg-neutral-800 shadow-card">
@@ -67,35 +90,70 @@ export default function Nav() {
                         
                         {!loading && (
                             user ? (
-                                <div className="flex items-center space-x-3">
-                                    {userRole && (
-                                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border">
-                                            {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
-                                        </span>
-                                    )}
-                                    <div className="relative">
-                                        <button className="flex items-center space-x-1 text-sm text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white focus:outline-none">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        {/* User menu dropdown - hidden for now, can be implemented later */}
-                                    </div>
-                                    <Link
-                                        href="/profile"
-                                        className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-                                    >
-                                        Profile
-                                    </Link>
+                                <div className="relative" ref={dropdownRef}>
                                     <button
-                                        onClick={handleLogout}
-                                        className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        className="flex items-center space-x-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-md px-2 py-1"
                                     >
-                                        Sign out
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        <span className="hidden md:block">{getUserDisplayName()}</span>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
                                     </button>
+
+                                    {/* Dropdown Menu */}
+                                    {isDropdownOpen && (
+                                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                                            <div className="py-1">
+                                                {/* User Name */}
+                                                <div className="px-4 py-2 text-sm text-neutral-900 dark:text-white font-medium border-b border-neutral-200 dark:border-neutral-700">
+                                                    {getUserDisplayName()}
+                                                </div>
+                                                
+                                                {/* User Role */}
+                                                {userRole && (
+                                                    <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-700">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                                            {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Profile Link */}
+                                                <Link
+                                                    href="/profile"
+                                                    className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white"
+                                                    onClick={() => setIsDropdownOpen(false)}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                        Profile
+                                                    </div>
+                                                </Link>
+
+                                                {/* Sign Out */}
+                                                <button
+                                                    onClick={() => {
+                                                        setIsDropdownOpen(false);
+                                                        handleLogout();
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white"
+                                                >
+                                                    <div className="flex items-center">
+                                                        <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                        </svg>
+                                                        Sign out
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex items-center space-x-3">
