@@ -20,9 +20,19 @@ SMTP_PORT = 2525
 
 def get_email_config():
     """Get email configuration from Secret Manager with fallback to environment variables."""
+    # Get raw values
+    username = get_secret_or_env("SMTP2GO_USERNAME", "SMTP2GO_USERNAME")
+    password = get_secret_or_env("SMTP2GO_PASSWORD", "SMTP2GO_PASSWORD")
+    
+    # Strip whitespace and handle potential encoding issues
+    if username:
+        username = username.strip()
+    if password:
+        password = password.strip()
+    
     return {
-        'smtp_username': get_secret_or_env("SMTP2GO_USERNAME", "SMTP2GO_USERNAME"),
-        'smtp_password': get_secret_or_env("SMTP2GO_PASSWORD", "SMTP2GO_PASSWORD"),
+        'smtp_username': username,
+        'smtp_password': password,
         'from_email': get_secret_or_env("FROM_EMAIL", "FROM_EMAIL", "noreply@yourmechanicservice.com"),
         'booking_url': get_secret_or_env("BOOKING_URL", "BOOKING_URL", "https://yourdomain.com/book")
     }
@@ -99,7 +109,10 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
     
     # Debug logging for authentication (log username but not password)
     logger.info(f"SMTP Configuration - Username: {config['smtp_username'][:5]}...{config['smtp_username'][-3:] if len(config['smtp_username']) > 8 else '[MASKED]'}")
+    logger.info(f"SMTP Configuration - Username length: {len(config['smtp_username'])}")
+    logger.info(f"SMTP Configuration - Username repr: {repr(config['smtp_username'][:10])}")  # Show any hidden chars
     logger.info(f"SMTP Configuration - Password length: {len(config['smtp_password']) if config['smtp_password'] else 0}")
+    logger.info(f"SMTP Configuration - Password repr: {repr(config['smtp_password'][:5]) if config['smtp_password'] else 'None'}")  # Show any hidden chars
     logger.info(f"SMTP Configuration - From email: {config['from_email']}")
     
     if not config['smtp_username'] or not config['smtp_password']:
@@ -123,9 +136,17 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
         
         # Send email via SMTP2GO
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            logger.info(f"Connected to SMTP server {SMTP_SERVER}:{SMTP_PORT}")
             server.starttls()
+            logger.info("STARTTLS completed successfully")
+            
+            # Log the login attempt (but not the actual credentials)
+            logger.info(f"Attempting SMTP login with username: {config['smtp_username']}")
             server.login(config['smtp_username'], config['smtp_password'])
+            logger.info("SMTP login successful")
+            
             server.send_message(msg)
+            logger.info("Email message sent successfully")
         
         logger.info(f"Email sent successfully to {to_email}")
         return True
