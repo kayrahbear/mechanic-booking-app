@@ -170,6 +170,17 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
+# NHTSA API models
+class NHTSAMake(BaseModel):
+    Make_ID: Union[int, str]  # NHTSA returns integers, but we'll accept both
+    Make_Name: str
+
+class NHTSAModel(BaseModel):
+    Model_ID: Union[int, str]  # NHTSA returns integers, but we'll accept both
+    Model_Name: str
+    Make_ID: Union[int, str]
+    Make_Name: str
+
 # -- Availability Seeding (weekly) --
 class AvailabilitySeedRequest(BaseModel):
     """Request body for POST /availability/seed."""

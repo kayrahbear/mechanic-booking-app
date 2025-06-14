@@ -4,7 +4,7 @@ from typing import List, Dict
 import logging
 from uuid import uuid4
 
-from ..models import Vehicle, VehicleCreate, VehicleUpdate
+from ..models import Vehicle, VehicleCreate, VehicleUpdate, NHTSAMake, NHTSAModel
 from ..firestore import get_client
 from ..auth import get_current_user
 from ..services.nhtsa_service import nhtsa_service
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 # Setup logging
 logger = logging.getLogger(__name__)
 
-@router.get("/makes", response_model=List[Dict[str, str]])
+@router.get("/makes", response_model=List[NHTSAMake])
 async def get_vehicle_makes():
     """
     Get all vehicle makes from NHTSA API
@@ -26,7 +26,7 @@ async def get_vehicle_makes():
         logger.error(f"Error fetching vehicle makes: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch vehicle makes")
 
-@router.get("/models/{make}", response_model=List[Dict[str, str]])
+@router.get("/models/{make}", response_model=List[NHTSAModel])
 async def get_vehicle_models(make: str):
     """
     Get all models for a specific vehicle make from NHTSA API

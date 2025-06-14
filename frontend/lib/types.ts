@@ -78,3 +78,43 @@ export interface AvailabilityDay {
     slots: Record<string, SlotStatus>;
     mechanics: Record<string, boolean>;
 }
+
+// Vehicle types
+export interface Vehicle {
+    id: string;
+    make: string;
+    model: string;
+    year: number;
+    vin?: string;
+    user_id: string;
+    is_primary: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface VehicleCreate {
+    make: string;
+    model: string;
+    year: number;
+    vin?: string;
+}
+
+export interface VehicleUpdate {
+    make?: string;
+    model?: string;
+    year?: number;
+    vin?: string;
+}
+
+// NHTSA API types
+export interface NHTSAMake {
+    Make_ID: number | string;
+    Make_Name: string;
+}
+
+export interface NHTSAModel {
+    Model_ID: number | string;
+    Model_Name: string;
+    Make_ID: number | string;
+    Make_Name: string;
+}

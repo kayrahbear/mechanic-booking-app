@@ -1,24 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth-context';
-
-interface Vehicle {
-    id: string;
-    make: string;
-    model: string;
-    year: number;
-    vin?: string;
-    is_primary: boolean;
-}
-
-interface Make {
-    Make_ID: string;
-    Make_Name: string;
-}
-
-interface Model {
-    Model_ID: string;
-    Model_Name: string;
-}
+import { Vehicle, NHTSAMake, NHTSAModel } from '../lib/types';
 
 interface VehicleManagerProps {
     onVehicleAdded?: () => void;
@@ -33,8 +15,8 @@ export default function VehicleManager({
 }: VehicleManagerProps) {
     const { user } = useAuth();
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [makes, setMakes] = useState<Make[]>([]);
-    const [models, setModels] = useState<Model[]>([]);
+    const [makes, setMakes] = useState<NHTSAMake[]>([]);
+    const [models, setModels] = useState<NHTSAModel[]>([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
     const [loading, setLoading] = useState(true);
