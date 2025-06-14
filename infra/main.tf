@@ -15,6 +15,7 @@ resource "google_firestore_database" "default" {
 module "service_accounts" {
   source         = "./modules/service-accounts"
   cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
+  project_id     = var.project_id
 }
 
 /*

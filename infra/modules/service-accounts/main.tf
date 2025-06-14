@@ -20,3 +20,10 @@ resource "google_service_account_iam_member" "cb_frontend_impersonate" {
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${var.cloud_build_sa}"
 }
+
+# Grant Cloud Build service account access to Secret Manager
+resource "google_project_iam_member" "cb_secret_accessor" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${var.cloud_build_sa}"
+}

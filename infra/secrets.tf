@@ -71,7 +71,7 @@ resource "google_secret_manager_secret_iam_member" "worker_read_smtp_username" {
 
 resource "google_secret_manager_secret_iam_member" "worker_read_smtp_password" {
   secret_id = module.secrets.secret_ids["SMTP2GO_PASSWORD"]
-  role      = "roles/secretmanager.secretAccessor" 
+  role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.backend_sa.email}"
 }
 
