@@ -32,6 +32,7 @@ export function useAddressAutocomplete(
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<AddressComponents | null>(null);
+  const initializationRef = useRef(false);
 
   const clearAddress = useCallback(() => {
     setSelectedAddress(null);
@@ -73,74 +74,96 @@ export function useAddressAutocomplete(
       return;
     }
 
+    // Skip if already initialized or input ref not ready
+    if (initializationRef.current || !inputRef.current) {
+      return;
+    }
+
+    // Mark as being initialized
+    initializationRef.current = true;
+
     const loader = new Loader({
       apiKey,
       version: 'weekly',
-      libraries: ['places']
+      libraries: ['places', 'marker']
     });
 
-    loader.load().then(() => {
+    loader.load().then(async () => {
+      // Double check we still have the input and haven't been cleaned up
       if (!inputRef.current) return;
 
-      // Create the autocomplete object with options
-      autocompleteRef.current = new google.maps.places.PlaceAutocompleteElement({
-        types: ['address'],
-        componentRestrictions: { country: 'us' } // Restrict to US addresses
-      });
+      try {
+        // Import the Extended Component Library
+        await google.maps.importLibrary('places');
 
-      // Replace the input element with the autocomplete element
-      const parent = inputRef.current.parentNode;
-      if (parent) {
-        parent.replaceChild(autocompleteRef.current, inputRef.current);
-        // Update the ref to point to the new element's input
-        inputRef.current = autocompleteRef.current.querySelector('input') as HTMLInputElement;
-      }
+        // Create the PlaceAutocompleteElement
+        autocompleteRef.current = new google.maps.places.PlaceAutocompleteElement({
+          types: ['address'],
+          componentRestrictions: { country: 'us' }
+        });
 
-      // Add listener for place selection
-      autocompleteRef.current.addEventListener('gmp-placeselect', async (event: Event) => {
-        const customEvent = event as PlaceSelectEvent;
-        const place = customEvent.detail.place;
+        // Replace the input with the autocomplete element
+        const originalInput = inputRef.current;
+        const parent = originalInput.parentNode;
         
-        console.log('Place selected:', place);
-        
-        if (!place) {
-          console.error('No place found in selection');
+        if (!parent) {
+          console.error('Parent node not found for input element');
           return;
         }
 
-        try {
-          // Use the new Place API to fetch address components
-          await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+        parent.replaceChild(autocompleteRef.current, originalInput);
+        // Update ref to point to the autocomplete element's input
+        inputRef.current = autocompleteRef.current.querySelector('input') as HTMLInputElement;
+
+        // Add listener for place selection
+        autocompleteRef.current.addEventListener('gmp-placeselect', async (event: Event) => {
+          const customEvent = event as PlaceSelectEvent;
+          const place = customEvent.detail.place;
           
-          if (!place.addressComponents) {
-            console.error('No address components found in place');
+          console.log('Place selected:', place);
+          
+          if (!place) {
+            console.error('No place found in selection');
             return;
           }
 
-          console.log('Place address components:', place.addressComponents);
+          try {
+            // Fetch address components and formatted address
+            await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+            
+            if (!place.addressComponents) {
+              console.error('No address components found in place');
+              return;
+            }
 
-          // Parse address components from the new API response
-          const components = parseAddressComponents(place.addressComponents);
-          
-          console.log('Parsed components:', components);
+            console.log('Place address components:', place.addressComponents);
 
-          // Update the input field with the formatted address
-          if (inputRef.current && place.formattedAddress) {
-            inputRef.current.value = place.formattedAddress;
-            // Trigger a change event so React's controlled input updates
-            const event = new Event('input', { bubbles: true });
-            inputRef.current.dispatchEvent(event);
+            // Parse address components from the new API response
+            const components = parseAddressComponents(place.addressComponents);
+            
+            console.log('Parsed components:', components);
+
+            // Update the input field with the formatted address
+            if (inputRef.current && place.formattedAddress) {
+              inputRef.current.value = place.formattedAddress;
+              // Trigger a change event so React's controlled input updates
+              const changeEvent = new Event('input', { bubbles: true });
+              inputRef.current.dispatchEvent(changeEvent);
+            }
+
+            setSelectedAddress(components);
+            onAddressSelect(components);
+          } catch (error) {
+            console.error('Error fetching place details:', error);
+            setError('Failed to fetch complete address details');
           }
+        });
 
-          setSelectedAddress(components);
-          onAddressSelect(components);
-        } catch (error) {
-          console.error('Error fetching place details:', error);
-          setError('Failed to fetch complete address details');
-        }
-      });
-
-      setIsLoaded(true);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error setting up autocomplete:', error);
+        setError('Failed to initialize address autocomplete');
+      }
     }).catch((err) => {
       console.error('Error loading Google Maps API:', err);
       setError('Failed to load address autocomplete');
@@ -149,8 +172,10 @@ export function useAddressAutocomplete(
     // Cleanup
     return () => {
       if (autocompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current.remove();
+        autocompleteRef.current = null;
       }
+      initializationRef.current = false;
     };
   }, [onAddressSelect, parseAddressComponents]);
 
