@@ -8,12 +8,11 @@ export default function Home() {
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-16">
-                <h1 className="text-4xl font-bold mb-4 text-neutral-900 dark:text-white">Mechanic Scheduling App</h1>
+                <h1 className="text-4xl font-bold mb-4 text-neutral-900 dark:text-white">Monkey Boi Garage</h1>
 
                 {!loading && (
                     user ? (
                         <div className="space-y-4">
-                            <p className="text-green-700">Welcome back, {user.email}!</p>
                             <div className="flex justify-center space-x-4">
                                 <Link
                                     href="/services"
@@ -54,7 +53,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                 <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
                     <h2 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Quality Service</h2>
-                    <p className="text-neutral-800 dark:text-neutral-200">MECHANIC provides top-notch service for all vehicle makes and models.</p>
+                    <p className="text-neutral-800 dark:text-neutral-200">Monkey Boi Garage provides top-notch service for all vehicle makes and models within 30 miles of Middle Tennessee.</p>
                 </div>
                 <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg shadow-card">
                     <h2 className="text-xl font-bold mb-4 text-neutral-900 dark:text-white">Easy Scheduling</h2>
