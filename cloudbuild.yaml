@@ -85,7 +85,7 @@ steps:
 # 4  Terraform apply (infra changes)
 ###############################################################################
 - id: check-terraform-changes
-  name: gcr.io/cloud-builders/git
+  name: gcr.io/cloud-builders/gcloud
   entrypoint: bash
   args:
     - -c
@@ -93,13 +93,15 @@ steps:
       echo "=== Deployment Decision ==="
       echo "New containers built with tag: $SHORT_SHA"
       
-      # Check if there are any changes to infrastructure files
-      if git diff --name-only HEAD~1 HEAD | grep -E '^infra/|\.tf$|cloudbuild\.yaml$'; then
-        echo "Infrastructure changes detected - running full Terraform"
+      # Simple manual trigger: uncomment the line below to run full Terraform
+      TERRAFORM_TRIGGER=true
+      
+      if [ "${TERRAFORM_TRIGGER:-false}" = "true" ]; then
+        echo "Manual Terraform trigger enabled - running full Terraform"
         echo "✓ Full Terraform apply will run"
         echo "terraform-full" > /workspace/terraform-flag
       else
-        echo "No infrastructure changes - only updating Cloud Run services"
+        echo "No Terraform trigger - only updating Cloud Run services"
         echo "✓ Quick Cloud Run update will run"
         echo "cloudrun-update" > /workspace/terraform-flag
       fi
