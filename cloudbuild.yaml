@@ -94,7 +94,7 @@ steps:
       echo "New containers built with tag: $SHORT_SHA"
       
       # Simple manual trigger: uncomment the line below to run full Terraform
-      TERRAFORM_TRIGGER=true
+      # TERRAFORM_TRIGGER=true
       
       if [ "${TERRAFORM_TRIGGER:-false}" = "true" ]; then
         echo "Manual Terraform trigger enabled - running full Terraform"
