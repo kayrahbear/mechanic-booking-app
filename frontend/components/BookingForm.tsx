@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { fetchAvailableSlots, createBooking, getUserProfile, Service } from '../lib/api';
 import { useAuth } from '../lib/auth-context';
-import { useAddressAutocomplete } from '../hooks/useAddressAutocomplete';
+import { AddressAutocompleteInput, AddressComponents } from './AddressAutocomplete';
 
 interface AvailabilitySlot {
     time: string;
@@ -65,25 +65,25 @@ export default function BookingForm({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    // Address autocomplete hook
-    const { inputRef: addressInputRef, isLoaded: isAddressLoaded, error: addressError } = useAddressAutocomplete(
-        (address) => {
-            // Auto-populate city, state, and zip when address is selected
-            const fullAddress = `${address.streetNumber || ''} ${address.streetName || ''}`.trim();
-            if (fullAddress) {
-                setCustomerAddress(fullAddress);
-            }
-            if (address.city) {
-                setCustomerCity(address.city);
-            }
-            if (address.state) {
-                setCustomerState(address.state);
-            }
-            if (address.zipCode) {
-                setCustomerZip(address.zipCode);
-            }
+    // Handle address selection from autocomplete
+    const handleAddressSelect = useCallback((address: AddressComponents) => {
+        console.log('Address selected in BookingForm:', address);
+        
+        // Auto-populate city, state, and zip when address is selected
+        const fullAddress = `${address.streetNumber || ''} ${address.streetName || ''}`.trim();
+        if (fullAddress) {
+            setCustomerAddress(fullAddress);
         }
-    );
+        if (address.city) {
+            setCustomerCity(address.city);
+        }
+        if (address.state) {
+            setCustomerState(address.state);
+        }
+        if (address.zipCode) {
+            setCustomerZip(address.zipCode);
+        }
+    }, []);
 
     // To avoid missing dependency warning, memoise `loadAvailableSlots`.
 
@@ -309,11 +309,6 @@ export default function BookingForm({
                 </div>
             )}
 
-            {addressError && (
-                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-md">
-                    {addressError} - Address autocomplete disabled, manual entry available.
-                </div>
-            )}
 
             <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
@@ -558,27 +553,15 @@ export default function BookingForm({
                             <div>
                                 <label htmlFor="address" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                     Street Address*
-                                    {isAddressLoaded && (
-                                        <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
-                                            (Start typing for suggestions)
-                                        </span>
-                                    )}
                                 </label>
-                                <input
+                                <AddressAutocompleteInput
                                     id="address"
-                                    ref={addressInputRef}
-                                    type="text"
                                     value={customerAddress}
-                                    onChange={(e) => setCustomerAddress(e.target.value)}
+                                    onChange={setCustomerAddress}
+                                    onAddressSelect={handleAddressSelect}
                                     placeholder="123 Main Street"
-                                    className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
                                     required
                                 />
-                                {isAddressLoaded && (
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                                        Select an address from the dropdown to auto-fill city, state, and ZIP code.
-                                    </p>
-                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
