@@ -10,6 +10,18 @@ interface AddressComponents {
   country?: string;
 }
 
+interface PlaceSelectEvent extends Event {
+  detail: {
+    place: {
+      addressComponents?: Array<{
+        types: string[];
+        longText: string;
+        shortText: string;
+      }>;
+    };
+  };
+}
+
 interface AddressAutocompleteHook {
   inputRef: React.RefObject<HTMLInputElement | null>;
   isLoaded: boolean;
@@ -22,7 +34,7 @@ export function useAddressAutocomplete(
   onAddressSelect: (address: AddressComponents) => void
 ): AddressAutocompleteHook {
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<AddressComponents | null>(null);
@@ -51,39 +63,47 @@ export function useAddressAutocomplete(
     loader.load().then(() => {
       if (!inputRef.current) return;
 
-      // Create the autocomplete object
-      autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+      // Create the autocomplete object with options
+      autocompleteRef.current = new google.maps.places.PlaceAutocompleteElement({
         types: ['address'],
-        componentRestrictions: { country: 'us' }, // Restrict to US addresses
-        fields: ['address_components', 'formatted_address']
+        componentRestrictions: { country: 'us' } // Restrict to US addresses
       });
 
+      // Replace the input element with the autocomplete element
+      const parent = inputRef.current.parentNode;
+      if (parent) {
+        parent.replaceChild(autocompleteRef.current, inputRef.current);
+        // Update the ref to point to the new element's input
+        inputRef.current = autocompleteRef.current.querySelector('input') as HTMLInputElement;
+      }
+
       // Add listener for place selection
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current?.getPlace();
+      autocompleteRef.current.addEventListener('gmp-placeselect', (event: Event) => {
+        const customEvent = event as PlaceSelectEvent;
+        const place = customEvent.detail.place;
         
-        if (!place || !place.address_components) {
+        if (!place || !place.addressComponents) {
           return;
         }
 
         // Parse address components
         const components: AddressComponents = {};
         
-        place.address_components.forEach((component) => {
+        place.addressComponents.forEach((component) => {
           const types = component.types;
           
           if (types.includes('street_number')) {
-            components.streetNumber = component.long_name;
+            components.streetNumber = component.longText;
           } else if (types.includes('route')) {
-            components.streetName = component.long_name;
+            components.streetName = component.longText;
           } else if (types.includes('locality')) {
-            components.city = component.long_name;
+            components.city = component.longText;
           } else if (types.includes('administrative_area_level_1')) {
-            components.state = component.short_name;
+            components.state = component.shortText;
           } else if (types.includes('postal_code')) {
-            components.zipCode = component.long_name;
+            components.zipCode = component.longText;
           } else if (types.includes('country')) {
-            components.country = component.long_name;
+            components.country = component.longText;
           }
         });
 
