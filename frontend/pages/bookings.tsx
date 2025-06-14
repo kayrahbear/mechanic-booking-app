@@ -47,7 +47,6 @@ const BookingsPage = () => {
     // Form states
     const [cancellationReason, setCancellationReason] = useState('');
     const [rescheduleReason, setRescheduleReason] = useState('');
-    const [selectedSlots, setSelectedSlots] = useState<RescheduleSlot[]>([]);
 
     // Fetch bookings when user is authenticated
     useEffect(() => {
@@ -140,7 +139,6 @@ const BookingsPage = () => {
             
             setShowRescheduleModal(false);
             setRescheduleReason('');
-            setSelectedSlots([]);
             setSelectedBooking(null);
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 5000);
@@ -369,7 +367,6 @@ const BookingsPage = () => {
                                 onClick={() => {
                                     setShowRescheduleModal(false);
                                     setRescheduleReason('');
-                                    setSelectedSlots([]);
                                     setSelectedBooking(null);
                                 }}
                                 className="px-4 py-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 border border-neutral-300 dark:border-neutral-600 rounded-md"
