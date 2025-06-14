@@ -11,7 +11,7 @@ interface AddressComponents {
 }
 
 interface AddressAutocompleteHook {
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   isLoaded: boolean;
   error: string | null;
   selectedAddress: AddressComponents | null;
