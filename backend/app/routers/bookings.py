@@ -411,7 +411,7 @@ async def cancel_booking(
     # Update the booking using a transaction
     @firestore.transactional
     def cancel_booking_txn(transaction: firestore.Transaction):
-        # Read the booking document
+        # Read the booking document first
         doc = booking_ref.get(transaction=transaction)
         if not doc.exists:
             return None
@@ -427,6 +427,14 @@ async def cancel_booking(
         if current_status not in [BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value]:
             raise HTTPException(400, f"Cannot cancel booking with status: {current_status}")
         
+        # Read the availability document before any writes
+        slot_date = booking_data["slot_start"].date().isoformat()
+        slot_time = booking_data["slot_start"].strftime("%H:%M")
+        
+        avail_ref = db.collection("availability").document(slot_date)
+        avail_doc = avail_ref.get(transaction=transaction)
+        
+        # Now perform all writes
         # Update the booking
         update_data = {
             "status": BookingStatus.CANCELLED.value,
@@ -438,13 +446,6 @@ async def cancel_booking(
         transaction.update(booking_ref, update_data)
         
         # Mark the slot as available again
-        slot_date = booking_data["slot_start"].date().isoformat()
-        slot_time = booking_data["slot_start"].strftime("%H:%M")
-        
-        # Read the availability document
-        avail_ref = db.collection("availability").document(slot_date)
-        avail_doc = avail_ref.get(transaction=transaction)
-        
         if avail_doc.exists:
             avail_data = avail_doc.to_dict()
             slots = avail_data.get("slots", {})
