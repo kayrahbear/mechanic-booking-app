@@ -18,7 +18,12 @@ steps:
     - |
       echo "Fetching Firebase config from Secret Manager..."
       gcloud secrets versions access latest --secret=firebase-web-config --project=$PROJECT_ID > frontend/.env.local
-      echo "Firebase config fetched successfully"
+      
+      echo "Fetching Google Maps API key from Secret Manager..."
+      GOOGLE_MAPS_KEY=$$(gcloud secrets versions access latest --secret=google-maps-api-key --project=$PROJECT_ID)
+      echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$$GOOGLE_MAPS_KEY" >> frontend/.env.local
+      
+      echo "Environment config fetched successfully"
 
 ###############################################################################
 # 2  Build all containers in parallel

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^1.16.8",
     "date-fns": "^4.1.0",
     "firebase": "^10.14.1",
     "google-auth-library": "^9.14.1",
