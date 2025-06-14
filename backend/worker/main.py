@@ -9,6 +9,8 @@ from email_service import (
     send_confirmation_email, 
     send_approval_email, 
     send_denial_email,
+    send_cancellation_email,
+    send_reschedule_request_email,
     EmailServiceError
 )
 
@@ -83,6 +85,10 @@ async def process_notification(request: Request):
                 email_sent = send_approval_email(template_data, mechanic_phone)
             elif notification_type == "denial":
                 email_sent = send_denial_email(template_data)
+            elif notification_type == "cancellation":
+                email_sent = send_cancellation_email(template_data)
+            elif notification_type == "reschedule_request":
+                email_sent = send_reschedule_request_email(template_data)
             else:
                 logger.warning(f"Unknown notification type: {notification_type}")
                 return {"status": "error", "message": f"Unknown notification type: {notification_type}"}

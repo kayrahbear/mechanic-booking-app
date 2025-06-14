@@ -57,6 +57,22 @@ class BookingStatus(str, Enum):
     CANCELLED = "cancelled"
     DENIED = "denied"
     NO_SHOW = "no-show"
+    RESCHEDULE_REQUESTED = "reschedule-requested"
+
+class RescheduleSlotRequest(BaseModel):
+    """Preferred new time slot for reschedule request"""
+    start: datetime
+    end: datetime
+    priority: int = 1  # 1 = first choice, 2 = second choice, etc.
+
+class BookingCancellationRequest(BaseModel):
+    """Request to cancel a booking"""
+    reason: Optional[str] = None
+
+class BookingRescheduleRequest(BaseModel):
+    """Request to reschedule a booking"""
+    reason: str
+    preferred_slots: List[RescheduleSlotRequest] = Field(..., min_items=1, max_items=3)
 
 class BookingOut(BookingCreate):
     id: str = Field(..., description="Firestore document ID")
@@ -67,6 +83,20 @@ class BookingOut(BookingCreate):
     calendar_event_id: Optional[str] = None  # Google Calendar event ID
     approved_by: Optional[str] = None  # Mechanic who approved/denied the booking
     approval_timestamp: Optional[datetime] = None  # When the booking was approved/denied
+    approval_notes: Optional[str] = None  # Notes from the approver
+    
+    # Cancellation fields
+    cancellation_reason: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
+    
+    # Reschedule fields
+    reschedule_reason: Optional[str] = None
+    reschedule_requested_slots: Optional[List[RescheduleSlotRequest]] = None
+    reschedule_requested_at: Optional[datetime] = None
+    reschedule_response_notes: Optional[str] = None
+    reschedule_responded_by: Optional[str] = None
+    reschedule_responded_at: Optional[datetime] = None
+    
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

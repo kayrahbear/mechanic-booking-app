@@ -253,3 +253,74 @@ def send_denial_email(booking_data: Dict[str, Any]) -> bool:
     except Exception as e:
         logger.error(f"Failed to send denial email: {str(e)}")
         return False
+
+def send_cancellation_email(booking_data: Dict[str, Any]) -> bool:
+    """
+    Send a booking cancellation confirmation email.
+    
+    Args:
+        booking_data: Booking information
+        
+    Returns:
+        True if email was sent successfully
+    """
+    try:
+        config = get_email_config()
+        
+        # Add booking URL to template data
+        template_data = booking_data.copy()
+        template_data['booking_url'] = config['booking_url']
+        
+        subject = f"Appointment Cancelled - {booking_data['service_name']}"
+        html_content = render_email_template('cancellation.html', template_data)
+        
+        return send_email(
+            to_email=booking_data['customer_email'],
+            subject=subject,
+            html_content=html_content
+        )
+    except Exception as e:
+        logger.error(f"Failed to send cancellation email: {str(e)}")
+        return False
+
+def send_reschedule_request_email(booking_data: Dict[str, Any]) -> bool:
+    """
+    Send a reschedule request confirmation email to customer and notification to admin.
+    
+    Args:
+        booking_data: Booking information
+        
+    Returns:
+        True if email was sent successfully
+    """
+    try:
+        # Send confirmation to customer
+        subject = f"Reschedule Request Received - {booking_data['service_name']}"
+        html_content = render_email_template('reschedule_request.html', booking_data)
+        
+        customer_success = send_email(
+            to_email=booking_data['customer_email'],
+            subject=subject,
+            html_content=html_content
+        )
+        
+        # Also send notification to admin/mechanic
+        # For now, we'll use a simple approach - in production you might want a separate admin email template
+        admin_subject = f"Reschedule Request - {booking_data['customer_name']} - {booking_data['service_name']}"
+        admin_html_content = render_email_template('reschedule_admin_notification.html', booking_data)
+        
+        # Send to a configured admin email or mechanic email
+        config = get_email_config()
+        admin_email = config.get('admin_email', 'admin@monkeyboigarage.com')  # You can add this to secret manager
+        
+        admin_success = send_email(
+            to_email=admin_email,
+            subject=admin_subject,
+            html_content=admin_html_content
+        )
+        
+        return customer_success and admin_success
+        
+    except Exception as e:
+        logger.error(f"Failed to send reschedule request email: {str(e)}")
+        return False

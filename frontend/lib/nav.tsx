@@ -24,7 +24,7 @@ export default function Nav() {
                     <div className="flex">
                         <div className="flex-shrink-0 flex items-center">
                             <Link href="/" className="text-xl font-bold text-primary dark:text-white">
-                                Mechanic Scheduler
+                                Monkey Boi Garage
                             </Link>
                         </div>
                         <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -36,7 +36,7 @@ export default function Nav() {
                             </Link>
                             {userRole === 'customer' && (
                                 <Link href="/bookings" className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/bookings') ? 'border-primary dark:border-accent text-neutral-900 dark:text-white' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-200'}`}>
-                                    My Bookings
+                                    My Appointments
                                 </Link>
                             )}
                             {(userRole === 'mechanic' || userRole === 'admin') && (

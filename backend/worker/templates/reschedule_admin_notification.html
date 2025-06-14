@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reschedule Request - Action Required</title>
+    <style>
+        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+        .header { background-color: #fff3cd; padding: 20px; text-align: center; border: 1px solid #ffeaa7; }
+        .content { padding: 20px; }
+        .appointment-details { background-color: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .customer-details { background-color: #e9ecef; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .reschedule-reason { background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .action-required { background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Reschedule Request - Action Required</h1>
+        </div>
+        
+        <div class="content">
+            <p><strong>A customer has requested to reschedule their appointment.</strong></p>
+            
+            <div class="customer-details">
+                <h3>Customer Information</h3>
+                <p><strong>Name:</strong> {{ customer_name }}</p>
+                <p><strong>Email:</strong> {{ customer_email }}</p>
+                <p><strong>Phone:</strong> {{ customer_phone | default('Not provided') }}</p>
+            </div>
+            
+            <div class="appointment-details">
+                <h3>Current Appointment Details</h3>
+                <p><strong>Service:</strong> {{ service_name }}</p>
+                <p><strong>Date:</strong> {{ appointment_date }}</p>
+                <p><strong>Time:</strong> {{ appointment_time }}</p>
+                <p><strong>Location:</strong> {{ customer_address }}, {{ customer_city }}, {{ customer_state }} {{ customer_zip }}</p>
+                <p><strong>Booking ID:</strong> {{ booking_id }}</p>
+            </div>
+            
+            {% if reschedule_reason %}
+            <div class="reschedule-reason">
+                <h4>Customer's Reason for Reschedule:</h4>
+                <p>{{ reschedule_reason }}</p>
+            </div>
+            {% endif %}
+            
+            {% if notes %}
+            <div class="appointment-details">
+                <h4>Original Booking Notes:</h4>
+                <p>{{ notes }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="action-required">
+                <h4>⚠️ Action Required</h4>
+                <p>Please contact the customer to:</p>
+                <ul>
+                    <li>Discuss available alternative appointment times</li>
+                    <li>Confirm a new date and time that works for both parties</li>
+                    <li>Update the booking in the system once agreed</li>
+                </ul>
+                <p><strong>Response Time Goal:</strong> Within 24 hours</p>
+            </div>
+            
+            <p><strong>Next Steps:</strong></p>
+            <ol>
+                <li>Contact the customer using the information above</li>
+                <li>Check your availability for alternative times</li>
+                <li>Agree on a new appointment time</li>
+                <li>Update the booking in the admin dashboard</li>
+                <li>Confirm the new appointment with the customer</li>
+            </ol>
+            
+            <p>The customer's current appointment slot is still reserved until the reschedule is processed.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification. Please respond to the customer directly using their contact information above.</p>
+        </div>
+    </div>
+</body>
+</html>

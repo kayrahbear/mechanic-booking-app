@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Appointment Cancelled</title>
+    <style>
+        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .appointment-details { background-color: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .button { background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .cancellation-reason { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Appointment Cancelled</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hi {{ customer_name }},</p>
+            
+            <p>Your appointment has been successfully cancelled. Here are the details:</p>
+            
+            <div class="appointment-details">
+                <h3>Cancelled Appointment Details</h3>
+                <p><strong>Service:</strong> {{ service_name }}</p>
+                <p><strong>Date:</strong> {{ appointment_date }}</p>
+                <p><strong>Time:</strong> {{ appointment_time }}</p>
+                <p><strong>Location:</strong> {{ customer_address }}, {{ customer_city }}, {{ customer_state }} {{ customer_zip }}</p>
+            </div>
+            
+            {% if cancellation_reason %}
+            <div class="cancellation-reason">
+                <h4>Cancellation Reason:</h4>
+                <p>{{ cancellation_reason }}</p>
+            </div>
+            {% endif %}
+            
+            <p>Your time slot is now available for other customers. No further action is required from you.</p>
+            
+            <p>If you need to book a new appointment, you can do so anytime:</p>
+            
+            <a href="{{ booking_url }}" class="button">Book New Appointment</a>
+            
+            <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+            
+            <p>Thank you for your understanding.</p>
+            
+            <p>Best regards,<br>
+            Monkey Boi Garage Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent regarding your appointment cancellation. If you received this in error, please contact us.</p>
+        </div>
+    </div>
+</body>
+</html>

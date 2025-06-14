@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reschedule Request Received</title>
+    <style>
+        .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .appointment-details { background-color: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .button { background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .reschedule-reason { background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .status-update { background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Reschedule Request Received</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hi {{ customer_name }},</p>
+            
+            <p>We've received your request to reschedule your appointment. Our team will review your request and contact you shortly to arrange a new time.</p>
+            
+            <div class="appointment-details">
+                <h3>Current Appointment Details</h3>
+                <p><strong>Service:</strong> {{ service_name }}</p>
+                <p><strong>Date:</strong> {{ appointment_date }}</p>
+                <p><strong>Time:</strong> {{ appointment_time }}</p>
+                <p><strong>Location:</strong> {{ customer_address }}, {{ customer_city }}, {{ customer_state }} {{ customer_zip }}</p>
+            </div>
+            
+            {% if reschedule_reason %}
+            <div class="reschedule-reason">
+                <h4>Your Reschedule Reason:</h4>
+                <p>{{ reschedule_reason }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="status-update">
+                <h4>What happens next?</h4>
+                <ul>
+                    <li>Our team will review your reschedule request</li>
+                    <li>We'll contact you within 24 hours to discuss available alternative times</li>
+                    <li>Your current appointment remains reserved until we confirm a new time</li>
+                    <li>Once we agree on a new time, we'll update your booking and send you a new confirmation</li>
+                </ul>
+            </div>
+            
+            <p>If you need to make any changes to your request or have urgent questions, please contact us directly.</p>
+            
+            <p>Thank you for letting us know about your scheduling needs. We'll work with you to find a convenient alternative time.</p>
+            
+            <p>Best regards,<br>
+            Monkey Boi Garage Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email confirms we received your reschedule request. We'll be in touch soon to arrange your new appointment time.</p>
+        </div>
+    </div>
+</body>
+</html>

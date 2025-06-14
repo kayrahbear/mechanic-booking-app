@@ -5,7 +5,7 @@ from typing import List, Optional
 import logging
 from pydantic import BaseModel
 
-from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole
+from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole, BookingCancellationRequest, BookingRescheduleRequest
 from ..firestore import get_client
 from ..auth import get_current_user, get_admin_user, get_mechanic_user
 from ..notifications import send_booking_notification
@@ -68,6 +68,30 @@ async def get_upcoming_bookings(
     
     # Order by date
     query = query.order_by("slot_start")
+    
+    # Execute query and format results
+    bookings = []
+    for doc in query.stream():
+        booking_data = doc.to_dict()
+        booking_data["id"] = doc.id
+        bookings.append(BookingOut(**booking_data))
+    
+    return bookings
+
+@router.get("/mechanic/reschedule-requests", response_model=List[BookingOut])
+async def get_reschedule_requests(
+    current_user = Depends(get_mechanic_user)
+):
+    """Get all bookings with reschedule requests that need admin action"""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    # Get all reschedule request bookings
+    query = db.collection("bookings").where("status", "==", BookingStatus.RESCHEDULE_REQUESTED.value)
+    
+    # Order by reschedule request date (most recent first)
+    query = query.order_by("reschedule_requested_at", direction=firestore.Query.DESCENDING)
     
     # Execute query and format results
     bookings = []
@@ -367,5 +391,173 @@ async def approve_or_deny_booking(
             booking_out, 
             "denial"
         )
+    
+    return booking_out
+
+@router.post("/{booking_id}/cancel", response_model=BookingOut)
+async def cancel_booking(
+    booking_id: str,
+    cancellation: BookingCancellationRequest,
+    background_tasks: BackgroundTasks,
+    current_user = Depends(get_current_user)
+):
+    """Cancel a booking. Only the booking owner or admin can cancel a booking."""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    booking_ref = db.collection("bookings").document(booking_id)
+    
+    # Update the booking using a transaction
+    @firestore.transactional
+    def cancel_booking_txn(transaction: firestore.Transaction):
+        # Read the booking document
+        doc = booking_ref.get(transaction=transaction)
+        if not doc.exists:
+            return None
+        
+        booking_data = doc.to_dict()
+        
+        # Check permissions - only booking owner or admin can cancel
+        if current_user.role != UserRole.ADMIN.value and booking_data.get("customer_email") != current_user.email:
+            raise HTTPException(403, "Not authorized to cancel this booking")
+        
+        # Check if booking can be cancelled
+        current_status = booking_data.get("status")
+        if current_status not in [BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value]:
+            raise HTTPException(400, f"Cannot cancel booking with status: {current_status}")
+        
+        # Update the booking
+        update_data = {
+            "status": BookingStatus.CANCELLED.value,
+            "cancellation_reason": cancellation.reason,
+            "cancelled_at": firestore.SERVER_TIMESTAMP,
+            "updated_at": firestore.SERVER_TIMESTAMP
+        }
+        
+        transaction.update(booking_ref, update_data)
+        
+        # Mark the slot as available again
+        slot_date = booking_data["slot_start"].date().isoformat()
+        slot_time = booking_data["slot_start"].strftime("%H:%M")
+        
+        # Read the availability document
+        avail_ref = db.collection("availability").document(slot_date)
+        avail_doc = avail_ref.get(transaction=transaction)
+        
+        if avail_doc.exists:
+            avail_data = avail_doc.to_dict()
+            slots = avail_data.get("slots", {})
+            
+            # Update slot to free if it was booked
+            if slots.get(slot_time) == SlotStatus.BOOKED.value:
+                slots[slot_time] = SlotStatus.FREE.value
+                transaction.update(avail_ref, {
+                    "slots": slots,
+                    "updated_at": firestore.SERVER_TIMESTAMP
+                })
+        
+        return booking_data
+    
+    # Execute the transaction
+    result = cancel_booking_txn(db.transaction())
+    
+    if not result:
+        raise HTTPException(404, "Booking not found")
+    
+    # Get the updated booking
+    updated_booking = booking_ref.get().to_dict()
+    booking_out = BookingOut(id=booking_id, **updated_booking)
+    
+    # Delete calendar event if it exists
+    if updated_booking.get("calendar_event_id"):
+        try:
+            background_tasks.add_task(
+                delete_event, 
+                updated_booking["calendar_event_id"]
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete calendar event: {str(e)}")
+    
+    # Send cancellation notification
+    background_tasks.add_task(
+        send_booking_notification, 
+        booking_out, 
+        "cancellation"
+    )
+    
+    return booking_out
+
+@router.post("/{booking_id}/reschedule", response_model=BookingOut)
+async def request_reschedule(
+    booking_id: str,
+    reschedule_request: BookingRescheduleRequest,
+    background_tasks: BackgroundTasks,
+    current_user = Depends(get_current_user)
+):
+    """Request a reschedule for a booking. Only the booking owner can request a reschedule."""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "DB unavailable")
+    
+    booking_ref = db.collection("bookings").document(booking_id)
+    
+    # Update the booking using a transaction
+    @firestore.transactional
+    def request_reschedule_txn(transaction: firestore.Transaction):
+        # Read the booking document
+        doc = booking_ref.get(transaction=transaction)
+        if not doc.exists:
+            return None
+        
+        booking_data = doc.to_dict()
+        
+        # Check permissions - only booking owner can request reschedule
+        if booking_data.get("customer_email") != current_user.email:
+            raise HTTPException(403, "Not authorized to reschedule this booking")
+        
+        # Check if booking can be rescheduled
+        current_status = booking_data.get("status")
+        if current_status not in [BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value]:
+            raise HTTPException(400, f"Cannot reschedule booking with status: {current_status}")
+        
+        # Convert preferred slots to dict format for Firestore
+        preferred_slots_data = []
+        for slot in reschedule_request.preferred_slots:
+            preferred_slots_data.append({
+                "start": slot.start,
+                "end": slot.end,
+                "priority": slot.priority
+            })
+        
+        # Update the booking
+        update_data = {
+            "status": BookingStatus.RESCHEDULE_REQUESTED.value,
+            "reschedule_reason": reschedule_request.reason,
+            "reschedule_requested_slots": preferred_slots_data,
+            "reschedule_requested_at": firestore.SERVER_TIMESTAMP,
+            "updated_at": firestore.SERVER_TIMESTAMP
+        }
+        
+        transaction.update(booking_ref, update_data)
+        
+        return booking_data
+    
+    # Execute the transaction
+    result = request_reschedule_txn(db.transaction())
+    
+    if not result:
+        raise HTTPException(404, "Booking not found")
+    
+    # Get the updated booking
+    updated_booking = booking_ref.get().to_dict()
+    booking_out = BookingOut(id=booking_id, **updated_booking)
+    
+    # Send reschedule request notification to admin/mechanic
+    background_tasks.add_task(
+        send_booking_notification, 
+        booking_out, 
+        "reschedule_request"
+    )
     
     return booking_out
