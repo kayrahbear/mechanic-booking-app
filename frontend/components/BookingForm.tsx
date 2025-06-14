@@ -66,40 +66,40 @@ export default function BookingForm({
 
     // To avoid missing dependency warning, memoise `loadAvailableSlots`.
 
-const loadAvailableSlots = useCallback(async () => {
-    try {
-        setIsLoading(true);
-        setError('');
-        // No longer passing selectedService as the backend doesn't use it anymore
-        // (there's only one mechanic who can perform all services)
-        const data = await fetchAvailableSlots(selectedDate);
+    const loadAvailableSlots = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError('');
+            // No longer passing selectedService as the backend doesn't use it anymore
+            // (there's only one mechanic who can perform all services)
+            const data = await fetchAvailableSlots(selectedDate);
 
-        console.log("BookingForm received data:", data);
+            console.log("BookingForm received data:", data);
 
-        // Transform the slots object to an array
-        const slotsArray = Object.entries(data.slots || {}).map(([time, status]) => ({
-            time,
-            status: status as 'free' | 'booked' | 'blocked'
-        }));
+            // Transform the slots object to an array
+            const slotsArray = Object.entries(data.slots || {}).map(([time, status]) => ({
+                time,
+                status: status as 'free' | 'booked' | 'blocked'
+            }));
 
-        // Sort the slots chronologically
-        slotsArray.sort((a, b) => {
-            // Compare times in HH:MM format
-            return a.time.localeCompare(b.time);
-        });
+            // Sort the slots chronologically
+            slotsArray.sort((a, b) => {
+                // Compare times in HH:MM format
+                return a.time.localeCompare(b.time);
+            });
 
-        console.log("BookingForm transformed slots:", slotsArray);
+            console.log("BookingForm transformed slots:", slotsArray);
 
-        setAvailableSlots(slotsArray);
-        setSelectedTime(''); // Reset selected time when slots change
-    } catch (err) {
-        console.error('Error loading available slots:', err);
-        setError('Failed to load available time slots');
-        setAvailableSlots([]);
-    } finally {
-        setIsLoading(false);
-    }
-}, [selectedDate]);
+            setAvailableSlots(slotsArray);
+            setSelectedTime(''); // Reset selected time when slots change
+        } catch (err) {
+            console.error('Error loading available slots:', err);
+            setError('Failed to load available time slots');
+            setAvailableSlots([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [selectedDate]);
 
     // Fetch available slots when date or service changes
     useEffect(() => {
@@ -180,7 +180,7 @@ const loadAvailableSlots = useCallback(async () => {
     // Handle vehicle selection
     const handleVehicleSelection = (vehicleId: string) => {
         setSelectedVehicle(vehicleId);
-        
+
         if (vehicleId === 'manual') {
             // Clear vehicle fields for manual entry
             setVehicleMake('');
@@ -332,6 +332,11 @@ const loadAvailableSlots = useCallback(async () => {
                         <label htmlFor="time" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                             Time*
                         </label>
+                        {!selectedService && (
+                            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                                Please select a service first
+                            </div>
+                        )}
                         {isLoading ? (
                             <div className="text-sm text-neutral-500 dark:text-neutral-400">Loading available slots...</div>
                         ) : availableSlots.length > 0 ? (
@@ -537,7 +542,7 @@ const loadAvailableSlots = useCallback(async () => {
                                     required
                                 />
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label htmlFor="city" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
@@ -553,7 +558,7 @@ const loadAvailableSlots = useCallback(async () => {
                                         required
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <label htmlFor="state" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                         State*
@@ -568,7 +573,7 @@ const loadAvailableSlots = useCallback(async () => {
                                         required
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <label htmlFor="zip" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                                         ZIP Code*
