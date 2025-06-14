@@ -121,6 +121,7 @@ class NHTSAService:
             {"Make_ID": 34, "Make_Name": "Fiat"},
             {"Make_ID": 35, "Make_Name": "McLaren"},
             {"Make_ID": 36, "Make_Name": "Rolls-Royce"},
+            {"Make_ID": 37, "Make_Name": "Tesla"},
         ]
     
     def _get_fallback_makes(self) -> List[Dict[str, str]]:
