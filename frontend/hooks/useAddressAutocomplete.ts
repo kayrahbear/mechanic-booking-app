@@ -110,7 +110,7 @@ export function useAddressAutocomplete(
 
         try {
           // Use the new Place API to fetch address components
-          await place.fetchFields({ fields: ['addressComponents'] });
+          await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
           
           if (!place.addressComponents) {
             console.error('No address components found in place');
@@ -123,6 +123,14 @@ export function useAddressAutocomplete(
           const components = parseAddressComponents(place.addressComponents);
           
           console.log('Parsed components:', components);
+
+          // Update the input field with the formatted address
+          if (inputRef.current && place.formattedAddress) {
+            inputRef.current.value = place.formattedAddress;
+            // Trigger a change event so React's controlled input updates
+            const event = new Event('input', { bubbles: true });
+            inputRef.current.dispatchEvent(event);
+          }
 
           setSelectedAddress(components);
           onAddressSelect(components);
