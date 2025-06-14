@@ -12,14 +12,7 @@ interface AddressComponents {
 
 interface PlaceSelectEvent extends Event {
   detail: {
-    place: {
-      id?: string;
-      addressComponents?: Array<{
-        types: string[];
-        longText: string;
-        shortText: string;
-      }>;
-    };
+    place: google.maps.places.Place;
   };
 }
 
@@ -36,7 +29,6 @@ export function useAddressAutocomplete(
 ): AddressAutocompleteHook {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<AddressComponents | null>(null);
@@ -48,49 +40,25 @@ export function useAddressAutocomplete(
     }
   }, []);
 
-  // Function to fetch place details using Place ID
-  const fetchPlaceDetails = useCallback(async (placeId: string) => {
-    if (!placesServiceRef.current) {
-      console.error('Places service not initialized');
-      return null;
-    }
-
-    return new Promise<google.maps.places.PlaceResult | null>((resolve) => {
-      const request: google.maps.places.PlaceDetailsRequest = {
-        placeId: placeId,
-        fields: ['address_components', 'formatted_address', 'geometry']
-      };
-
-      placesServiceRef.current!.getDetails(request, (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          resolve(place);
-        } else {
-          console.error('Place details request failed:', status);
-          resolve(null);
-        }
-      });
-    });
-  }, []);
-
-  // Function to parse address components from Place Details response
-  const parseAddressComponents = useCallback((addressComponents: google.maps.GeocoderAddressComponent[]) => {
+  // Function to parse address components from the new Place API response
+  const parseAddressComponents = useCallback((addressComponents: google.maps.places.AddressComponent[]) => {
     const components: AddressComponents = {};
     
     addressComponents.forEach((component) => {
       const types = component.types;
       
-      if (types.includes('street_number')) {
-        components.streetNumber = component.long_name;
-      } else if (types.includes('route')) {
-        components.streetName = component.long_name;
-      } else if (types.includes('locality')) {
-        components.city = component.long_name;
-      } else if (types.includes('administrative_area_level_1')) {
-        components.state = component.short_name;
-      } else if (types.includes('postal_code')) {
-        components.zipCode = component.long_name;
-      } else if (types.includes('country')) {
-        components.country = component.long_name;
+      if (types.includes('street_number') && component.longText) {
+        components.streetNumber = component.longText;
+      } else if (types.includes('route') && component.longText) {
+        components.streetName = component.longText;
+      } else if (types.includes('locality') && component.longText) {
+        components.city = component.longText;
+      } else if (types.includes('administrative_area_level_1') && component.shortText) {
+        components.state = component.shortText;
+      } else if (types.includes('postal_code') && component.longText) {
+        components.zipCode = component.longText;
+      } else if (types.includes('country') && component.longText) {
+        components.country = component.longText;
       }
     });
 
@@ -114,11 +82,6 @@ export function useAddressAutocomplete(
     loader.load().then(() => {
       if (!inputRef.current) return;
 
-      // Initialize Places service for place details requests
-      const mapDiv = document.createElement('div');
-      const map = new google.maps.Map(mapDiv);
-      placesServiceRef.current = new google.maps.places.PlacesService(map);
-
       // Create the autocomplete object with options
       autocompleteRef.current = new google.maps.places.PlaceAutocompleteElement({
         types: ['address'],
@@ -140,24 +103,24 @@ export function useAddressAutocomplete(
         
         console.log('Place selected:', place);
         
-        if (!place || !place.id) {
-          console.error('No place ID found in selection');
+        if (!place) {
+          console.error('No place found in selection');
           return;
         }
 
         try {
-          // Fetch complete place details using the place ID
-          const placeDetails = await fetchPlaceDetails(place.id);
+          // Use the new Place API to fetch address components
+          await place.fetchFields({ fields: ['addressComponents'] });
           
-          if (!placeDetails || !placeDetails.address_components) {
-            console.error('Failed to fetch place details or no address components found');
+          if (!place.addressComponents) {
+            console.error('No address components found in place');
             return;
           }
 
-          console.log('Place details:', placeDetails);
+          console.log('Place address components:', place.addressComponents);
 
-          // Parse address components from the detailed response
-          const components = parseAddressComponents(placeDetails.address_components);
+          // Parse address components from the new API response
+          const components = parseAddressComponents(place.addressComponents);
           
           console.log('Parsed components:', components);
 
@@ -181,7 +144,7 @@ export function useAddressAutocomplete(
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, [onAddressSelect, fetchPlaceDetails, parseAddressComponents]);
+  }, [onAddressSelect, parseAddressComponents]);
 
   return {
     inputRef,
