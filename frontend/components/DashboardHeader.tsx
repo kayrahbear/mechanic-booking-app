@@ -4,7 +4,7 @@ import { useNavigation } from '../lib/navigation-context';
 
 export default function DashboardHeader() {
     const { user, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { isDarkMode, toggleDarkMode } = useTheme();
     const { toggleSidebar, activeSection } = useNavigation();
 
     const getSectionTitle = (section: string) => {
@@ -49,11 +49,11 @@ export default function DashboardHeader() {
                 <div className="flex items-center gap-3">
                     {/* Theme toggle */}
                     <button
-                        onClick={toggleTheme}
+                        onClick={toggleDarkMode}
                         className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                        title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                        title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
                     >
-                        {theme === 'light' ? (
+                        {!isDarkMode ? (
                             <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                             </svg>
