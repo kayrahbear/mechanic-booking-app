@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../lib/auth-context';
 import { Vehicle, NHTSAMake, NHTSAModel } from '../lib/types';
 
@@ -36,7 +36,7 @@ export default function VehicleManager({
         if (user) {
             loadVehicles();
         }
-    }, [user]);
+    }, [user, loadVehicles]);
 
     // Load makes when component mounts
     useEffect(() => {
@@ -52,7 +52,7 @@ export default function VehicleManager({
         }
     }, [formData.make]);
 
-    const loadVehicles = async () => {
+    const loadVehicles = useCallback(async () => {
         try {
             setLoading(true);
             const token = await user?.getIdToken();
@@ -75,7 +75,7 @@ export default function VehicleManager({
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     const loadMakes = async () => {
         try {

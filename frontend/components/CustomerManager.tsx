@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../lib/auth-context';
 import { NHTSAMake, NHTSAModel } from '../lib/types';
 
@@ -89,7 +89,7 @@ export default function CustomerManager({
         if (user) {
             loadCustomers();
         }
-    }, [user]);
+    }, [user, loadCustomers]);
 
     // Load makes when component mounts
     useEffect(() => {
@@ -105,7 +105,7 @@ export default function CustomerManager({
         }
     }, [formData.vehicle_make]);
 
-    const loadCustomers = async () => {
+    const loadCustomers = useCallback(async () => {
         try {
             setLoading(true);
             const token = await user?.getIdToken();
@@ -128,7 +128,7 @@ export default function CustomerManager({
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     const loadMakes = async () => {
         try {
@@ -177,7 +177,7 @@ export default function CustomerManager({
             const method = editingCustomer ? 'PUT' : 'POST';
             
             // Prepare payload
-            const payload: any = {
+            const payload: Record<string, unknown> = {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone || undefined,
@@ -594,7 +594,7 @@ export default function CustomerManager({
             <div className="space-y-3">
                 {customers.length === 0 ? (
                     <p className="text-neutral-500 dark:text-neutral-400 text-center py-8">
-                        No customers yet. Click "Add Customer" to get started.
+                        No customers yet. Click &ldquo;Add Customer&rdquo; to get started.
                     </p>
                 ) : (
                     customers.map((customer) => (
