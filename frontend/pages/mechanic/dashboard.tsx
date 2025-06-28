@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import ProtectedRoute from '../../lib/protected-route';
 import { useAuth } from '../../lib/auth-context';
+import { NavigationProvider, useNavigation } from '../../lib/navigation-context';
 import { Booking, MechanicSchedule } from '../../lib/types';
 import MechanicAvailabilityManager from '../../components/MechanicAvailabilityManager';
 import PendingAppointmentsList from '../../components/PendingAppointmentsList';
 import UpcomingAppointmentsList from '../../components/UpcomingAppointmentsList';
 import ServiceManager from '../../components/ServiceManager';
 import CustomerManager from '../../components/CustomerManager';
+import Sidebar from '../../components/Sidebar';
+import DashboardHeader from '../../components/DashboardHeader';
 import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
 import { User } from 'firebase/auth';
 
@@ -38,15 +41,16 @@ function ServiceManagerWrapper({ user }: { user: User }) {
     return <ServiceManager />;
 }
 
-export default function MechanicDashboard() {
-    const { user, userRole } = useAuth();
+// Main dashboard content component
+function DashboardContent() {
+    const { user } = useAuth();
+    const { activeSection } = useNavigation();
     const [isLoading, setIsLoading] = useState(true);
     const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
     const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
     const [isProcessingBooking, setIsProcessingBooking] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability' | 'services' | 'customers'>('pending');
     const [mechanicSchedule, setMechanicSchedule] = useState<MechanicSchedule | null>(null);
 
     useEffect(() => {
@@ -139,92 +143,114 @@ export default function MechanicDashboard() {
     };
 
 
+    // Create a combined scheduling component that includes pending and upcoming
+    const renderSchedulingContent = () => (
+        <div className="space-y-6">
+            {error && (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg">
+                    {error}
+                </div>
+            )}
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+                        Pending Appointments
+                        {pendingBookings.length > 0 && (
+                            <span className="ml-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-sm px-2 py-1 rounded">
+                                {pendingBookings.length}
+                            </span>
+                        )}
+                    </h3>
+                    <PendingAppointmentsList
+                        bookings={pendingBookings}
+                        onApprove={handleApproveBooking}
+                        onDeny={handleDenyBooking}
+                        isLoading={isProcessingBooking}
+                    />
+                </div>
+                
+                <div>
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+                        Upcoming Appointments
+                        {upcomingBookings.length > 0 && (
+                            <span className="ml-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm px-2 py-1 rounded">
+                                {upcomingBookings.length}
+                            </span>
+                        )}
+                    </h3>
+                    <UpcomingAppointmentsList bookings={upcomingBookings} />
+                </div>
+            </div>
+
+            <div>
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+                    Manage Availability
+                </h3>
+                <MechanicAvailabilityManager
+                    initialSchedule={mechanicSchedule || undefined}
+                    onSave={handleSaveAvailability}
+                    isLoading={isUpdatingAvailability}
+                />
+            </div>
+        </div>
+    );
+
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary dark:border-accent"></div>
+                </div>
+            );
+        }
+
+        switch (activeSection) {
+            case 'scheduling':
+                return renderSchedulingContent();
+            case 'customers':
+                return <CustomerManager />;
+            case 'analytics':
+                return user && <ServiceManagerWrapper user={user} />;
+            default:
+                return (
+                    <div className="text-center py-12">
+                        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">
+                            Coming Soon
+                        </h3>
+                        <p className="text-neutral-600 dark:text-neutral-400">
+                            This feature is under development.
+                        </p>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+            <div className="flex">
+                <Sidebar />
+                <div className="flex-1 md:ml-0">
+                    <DashboardHeader />
+                    <main className="p-6">
+                        {renderContent()}
+                    </main>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Main export component with providers
+export default function MechanicDashboard() {
     return (
         <ProtectedRoute requiredRole="mechanic">
             <Head>
                 <title>Mechanic Dashboard</title>
             </Head>
-            <div className="container mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold mb-6">Mechanic Dashboard</h1>
-
-                {isLoading ? (
-                    <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="bg-white shadow rounded-lg p-6 mb-6 dark:bg-neutral-800">
-                            <h2 className="text-xl font-semibold mb-4">Welcome, {user?.displayName || user?.email}</h2>
-                            <p className="text-gray-600">Role: {userRole}</p>
-                            {error && <p className="text-red-600 mt-2">{error}</p>}
-                        </div>
-
-                        <div className="flex border-b mb-6">
-                            <button
-                                className={`py-2 px-4 font-medium ${activeTab === 'pending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('pending')}
-                            >
-                                Pending Appointments {pendingBookings.length > 0 && `(${pendingBookings.length})`}
-                            </button>
-                            <button
-                                className={`py-2 px-4 font-medium ${activeTab === 'upcoming' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('upcoming')}
-                            >
-                                Upcoming Appointments {upcomingBookings.length > 0 && `(${upcomingBookings.length})`}
-                            </button>
-                            <button
-                                className={`py-2 px-4 font-medium ${activeTab === 'availability' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('availability')}
-                            >
-                                Manage Availability
-                            </button>
-                            <button
-                                className={`py-2 px-4 font-medium ${activeTab === 'services' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('services')}
-                            >
-                                Manage Services
-                            </button>
-                            <button
-                                className={`py-2 px-4 font-medium ${activeTab === 'customers' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('customers')}
-                            >
-                                Customer Management
-                            </button>
-                        </div>
-
-                        {activeTab === 'pending' && (
-                            <PendingAppointmentsList
-                                bookings={pendingBookings}
-                                onApprove={handleApproveBooking}
-                                onDeny={handleDenyBooking}
-                                isLoading={isProcessingBooking}
-                            />
-                        )}
-
-                        {activeTab === 'upcoming' && (
-                            <UpcomingAppointmentsList
-                                bookings={upcomingBookings}
-                            />
-                        )}
-
-                        {activeTab === 'availability' && (
-                            <MechanicAvailabilityManager
-                                initialSchedule={mechanicSchedule || undefined}
-                                onSave={handleSaveAvailability}
-                                isLoading={isUpdatingAvailability}
-                            />
-                        )}
-
-                        {activeTab === 'services' && user && (
-                            <ServiceManagerWrapper user={user} />
-                        )}
-
-                        {activeTab === 'customers' && (
-                            <CustomerManager />
-                        )}
-                    </>
-                )}
-            </div>
+            <NavigationProvider>
+                <DashboardContent />
+            </NavigationProvider>
         </ProtectedRoute>
     );
 }
