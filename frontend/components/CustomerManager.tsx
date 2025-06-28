@@ -67,6 +67,14 @@ export default function CustomerManager({
     const [error, setError] = useState('');
     const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
     const [showInvitationDialog, setShowInvitationDialog] = useState<string | null>(null);
+    const [showVehicleForm, setShowVehicleForm] = useState<string | null>(null);
+    const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+    const [vehicleFormData, setVehicleFormData] = useState({
+        make: '',
+        model: '',
+        year: new Date().getFullYear(),
+        vin: ''
+    });
 
     // Form state
     const [formData, setFormData] = useState<CustomerFormData>({
@@ -129,6 +137,15 @@ export default function CustomerManager({
             setModels([]);
         }
     }, [formData.vehicle_make]);
+
+    // Load models when vehicle form make changes
+    useEffect(() => {
+        if (vehicleFormData.make) {
+            loadModels(vehicleFormData.make);
+        } else {
+            setModels([]);
+        }
+    }, [vehicleFormData.make]);
 
     const loadMakes = async () => {
         try {
@@ -337,6 +354,109 @@ export default function CustomerManager({
             case 'accepted': return 'text-green-600 bg-green-100';
             case 'expired': return 'text-red-600 bg-red-100';
             default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    const handleAddVehicle = (customerId: string) => {
+        setShowVehicleForm(customerId);
+        setEditingVehicle(null);
+        setVehicleFormData({
+            make: '',
+            model: '',
+            year: new Date().getFullYear(),
+            vin: ''
+        });
+    };
+
+    const handleEditVehicle = (customerId: string, vehicle: Vehicle) => {
+        setShowVehicleForm(customerId);
+        setEditingVehicle(vehicle);
+        setVehicleFormData({
+            make: vehicle.make,
+            model: vehicle.model,
+            year: vehicle.year,
+            vin: vehicle.vin || ''
+        });
+    };
+
+    const handleVehicleSubmit = async (customerId: string) => {
+        if (!vehicleFormData.make || !vehicleFormData.model) {
+            setError('Make and model are required');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setError('');
+            
+            const token = await user?.getIdToken();
+            
+            if (editingVehicle) {
+                // Update existing vehicle
+                const response = await fetch(`/api/customers/${customerId}/vehicles/${editingVehicle.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(vehicleFormData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update vehicle');
+                }
+            } else {
+                // Add new vehicle
+                const response = await fetch(`/api/customers/${customerId}/vehicles`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(vehicleFormData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add vehicle');
+                }
+            }
+
+            // Reload customers to show updated vehicles
+            await loadCustomers();
+            setShowVehicleForm(null);
+            setEditingVehicle(null);
+            
+        } catch (err) {
+            console.error('Error saving vehicle:', err);
+            setError(err instanceof Error ? err.message : 'Failed to save vehicle');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteVehicle = async (customerId: string, vehicleId: string) => {
+        if (!confirm('Are you sure you want to delete this vehicle?')) {
+            return;
+        }
+
+        try {
+            const token = await user?.getIdToken();
+            const response = await fetch(`/api/customers/${customerId}/vehicles/${vehicleId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete vehicle');
+            }
+
+            await loadCustomers();
+        } catch (err) {
+            console.error('Error deleting vehicle:', err);
+            setError('Failed to delete vehicle');
         }
     };
 
@@ -681,30 +801,56 @@ export default function CustomerManager({
                                                 </p>
                                             </div>
                                             <div>
-                                                <h5 className="font-medium text-neutral-900 dark:text-white mb-2">
-                                                    Vehicles ({customer.vehicles.length})
-                                                </h5>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <h5 className="font-medium text-neutral-900 dark:text-white">
+                                                        Vehicles ({customer.vehicles.length})
+                                                    </h5>
+                                                    <button
+                                                        onClick={() => handleAddVehicle(customer.id)}
+                                                        className="text-xs text-primary dark:text-accent hover:underline"
+                                                    >
+                                                        Add Vehicle
+                                                    </button>
+                                                </div>
                                                 {customer.vehicles.length === 0 ? (
                                                     <p className="text-sm text-neutral-500 dark:text-neutral-400">
                                                         No vehicles registered
                                                     </p>
                                                 ) : (
-                                                    <div className="space-y-1">
+                                                    <div className="space-y-2">
                                                         {customer.vehicles.map((vehicle) => (
-                                                            <div key={vehicle.id} className="text-sm">
-                                                                <span className="text-neutral-900 dark:text-white">
-                                                                    {vehicle.year} {vehicle.make} {vehicle.model}
-                                                                </span>
-                                                                {vehicle.is_primary && (
-                                                                    <span className="ml-2 text-xs bg-primary dark:bg-accent text-white px-1 py-0.5 rounded">
-                                                                        Primary
-                                                                    </span>
-                                                                )}
-                                                                {vehicle.vin && (
-                                                                    <p className="text-neutral-600 dark:text-neutral-400 text-xs">
-                                                                        VIN: {vehicle.vin}
-                                                                    </p>
-                                                                )}
+                                                            <div key={vehicle.id} className="text-sm border border-neutral-200 dark:border-neutral-600 rounded p-2">
+                                                                <div className="flex justify-between items-start">
+                                                                    <div>
+                                                                        <span className="text-neutral-900 dark:text-white font-medium">
+                                                                            {vehicle.year} {vehicle.make} {vehicle.model}
+                                                                        </span>
+                                                                        {vehicle.is_primary && (
+                                                                            <span className="ml-2 text-xs bg-primary dark:bg-accent text-white px-1 py-0.5 rounded">
+                                                                                Primary
+                                                                            </span>
+                                                                        )}
+                                                                        {vehicle.vin && (
+                                                                            <p className="text-neutral-600 dark:text-neutral-400 text-xs mt-1">
+                                                                                VIN: {vehicle.vin}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex gap-1">
+                                                                        <button
+                                                                            onClick={() => handleEditVehicle(customer.id, vehicle)}
+                                                                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteVehicle(customer.id, vehicle.id)}
+                                                                            className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                                                                        >
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -718,6 +864,125 @@ export default function CustomerManager({
                     ))
                 )}
             </div>
+
+            {/* Vehicle Form Modal */}
+            {showVehicleForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-neutral-800 p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-4">
+                            {editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'}
+                        </h3>
+                        
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            handleVehicleSubmit(showVehicleForm);
+                        }} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="vehicle_make" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        Make*
+                                    </label>
+                                    <select
+                                        id="vehicle_make"
+                                        value={vehicleFormData.make}
+                                        onChange={(e) => {
+                                            setVehicleFormData({ ...vehicleFormData, make: e.target.value, model: '' });
+                                            if (e.target.value) {
+                                                loadModels(e.target.value);
+                                            } else {
+                                                setModels([]);
+                                            }
+                                        }}
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        required
+                                    >
+                                        <option value="">Select Make</option>
+                                        {makes.map((make) => (
+                                            <option key={make.Make_ID} value={make.Make_Name}>
+                                                {make.Make_Name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="vehicle_model" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        Model*
+                                    </label>
+                                    <select
+                                        id="vehicle_model"
+                                        value={vehicleFormData.model}
+                                        onChange={(e) => setVehicleFormData({ ...vehicleFormData, model: e.target.value })}
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        required
+                                        disabled={!vehicleFormData.make}
+                                    >
+                                        <option value="">Select Model</option>
+                                        {models.map((model) => (
+                                            <option key={model.Model_ID} value={model.Model_Name}>
+                                                {model.Model_Name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="vehicle_year" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        Year*
+                                    </label>
+                                    <select
+                                        id="vehicle_year"
+                                        value={vehicleFormData.year}
+                                        onChange={(e) => setVehicleFormData({ ...vehicleFormData, year: parseInt(e.target.value) })}
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                        required
+                                    >
+                                        {Array.from({ length: 45 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="vehicle_vin" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                                        VIN (optional)
+                                    </label>
+                                    <input
+                                        id="vehicle_vin"
+                                        type="text"
+                                        value={vehicleFormData.vin}
+                                        onChange={(e) => setVehicleFormData({ ...vehicleFormData, vin: e.target.value })}
+                                        maxLength={17}
+                                        placeholder="17-character VIN"
+                                        className="w-full p-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white focus:ring-primary focus:border-primary dark:focus:border-accent"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="bg-primary hover:bg-primary-dark dark:bg-accent dark:hover:bg-accent-dark text-white px-4 py-2 rounded-md disabled:opacity-70 transition-colors"
+                                >
+                                    {submitting ? 'Saving...' : (editingVehicle ? 'Update Vehicle' : 'Add Vehicle')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowVehicleForm(null);
+                                        setEditingVehicle(null);
+                                        setError('');
+                                    }}
+                                    className="bg-neutral-500 hover:bg-neutral-600 text-white px-4 py-2 rounded-md transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Invitation Confirmation Dialog */}
             {showInvitationDialog && (

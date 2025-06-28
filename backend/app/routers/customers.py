@@ -478,12 +478,13 @@ async def add_customer_vehicle(
                 detail="Customer not found"
             )
 
-        # Check if this is the customer's first vehicle
-        existing_vehicles = db.collection("vehicles").where("user_id", "==", customer_id).get()
+        # Check if this is the customer's first vehicle (using subcollections)
+        user_vehicles_ref = db.collection("users").document(customer_id).collection("vehicles")
+        existing_vehicles = user_vehicles_ref.get()
         is_primary = len(existing_vehicles) == 0
 
-        # Create vehicle
-        vehicle_ref = db.collection("vehicles").document()
+        # Create vehicle in subcollection
+        vehicle_ref = user_vehicles_ref.document()
         vehicle_doc_data = {
             "make": vehicle_data.make,
             "model": vehicle_data.model,
@@ -509,4 +510,123 @@ async def add_customer_vehicle(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to add vehicle"
+        )
+
+@router.put("/{customer_id}/vehicles/{vehicle_id}", response_model=Vehicle)
+async def update_customer_vehicle(
+    customer_id: str,
+    vehicle_id: str,
+    vehicle_data: VehicleCreate,
+    current_user = Depends(get_current_user)
+):
+    """Update a vehicle for a customer."""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "Database unavailable")
+
+    try:
+        # Check if customer exists
+        customer_doc = db.collection("users").document(customer_id).get()
+        if not customer_doc.exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Customer not found"
+            )
+
+        # Check if vehicle exists
+        vehicle_ref = db.collection("users").document(customer_id).collection("vehicles").document(vehicle_id)
+        vehicle_doc = vehicle_ref.get()
+        if not vehicle_doc.exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found"
+            )
+
+        # Update vehicle data
+        update_data = {
+            "make": vehicle_data.make,
+            "model": vehicle_data.model,
+            "year": vehicle_data.year,
+            "vin": vehicle_data.vin or "",
+            "updated_at": firestore.SERVER_TIMESTAMP
+        }
+        vehicle_ref.update(update_data)
+
+        # Return updated vehicle
+        updated_vehicle = vehicle_ref.get().to_dict()
+        updated_vehicle["id"] = vehicle_id
+        updated_vehicle["user_id"] = customer_id
+        
+        return Vehicle(**updated_vehicle)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating vehicle {vehicle_id} for customer {customer_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update vehicle"
+        )
+
+@router.delete("/{customer_id}/vehicles/{vehicle_id}")
+async def delete_customer_vehicle(
+    customer_id: str,
+    vehicle_id: str,
+    current_user = Depends(get_current_user)
+):
+    """Delete a vehicle for a customer."""
+    db = get_client()
+    if not db:
+        raise HTTPException(500, "Database unavailable")
+
+    try:
+        # Check if customer exists
+        customer_doc = db.collection("users").document(customer_id).get()
+        if not customer_doc.exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Customer not found"
+            )
+
+        # Check if vehicle exists
+        vehicle_ref = db.collection("users").document(customer_id).collection("vehicles").document(vehicle_id)
+        vehicle_doc = vehicle_ref.get()
+        if not vehicle_doc.exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found"
+            )
+
+        # Check if this was the primary vehicle
+        vehicle_data = vehicle_doc.to_dict()
+        was_primary = vehicle_data.get("is_primary", False)
+
+        # Use transaction to handle primary vehicle reassignment
+        @firestore.transactional
+        def delete_vehicle_txn(transaction):
+            # Delete the vehicle
+            transaction.delete(vehicle_ref)
+            
+            # If this was the primary vehicle, set another vehicle as primary
+            if was_primary:
+                user_vehicles_ref = db.collection("users").document(customer_id).collection("vehicles")
+                remaining_vehicles = user_vehicles_ref.get(transaction=transaction)
+                
+                if remaining_vehicles:
+                    # Set the first remaining vehicle as primary
+                    first_vehicle_ref = remaining_vehicles[0].reference
+                    transaction.update(first_vehicle_ref, {"is_primary": True})
+
+        # Execute transaction
+        delete_vehicle_txn(db.transaction())
+
+        return {"message": "Vehicle deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting vehicle {vehicle_id} for customer {customer_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete vehicle"
         )
