@@ -50,6 +50,7 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<WorkOrderStatus | 'all'>('all');
+    const [editWindowFilter, setEditWindowFilter] = useState<'all' | 'editable' | 'expired'>('all');
 
     // Load work orders
     const loadWorkOrders = useCallback(async () => {
@@ -86,9 +87,30 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
         loadCustomers();
     }, [loadWorkOrders, loadCustomers]);
 
-    const filteredWorkOrders = workOrders.filter(wo => 
-        statusFilter === 'all' || wo.status === statusFilter
-    );
+    const filteredWorkOrders = workOrders.filter(wo => {
+        const matchesStatus = statusFilter === 'all' || wo.status === statusFilter;
+        
+        let matchesEditWindow = true;
+        if (editWindowFilter !== 'all') {
+            if (wo.status === WorkOrderStatus.WORK_COMPLETED) {
+                if (editWindowFilter === 'editable') {
+                    matchesEditWindow = wo.is_editable;
+                } else if (editWindowFilter === 'expired') {
+                    matchesEditWindow = !wo.is_editable;
+                }
+            } else {
+                // For non-completed work orders, they're always "editable"
+                matchesEditWindow = editWindowFilter === 'editable';
+            }
+        }
+        
+        return matchesStatus && matchesEditWindow;
+    });
+
+    // Calculate edit window stats
+    const completedWorkOrders = workOrders.filter(wo => wo.status === WorkOrderStatus.WORK_COMPLETED);
+    const editableCompleted = completedWorkOrders.filter(wo => wo.is_editable).length;
+    const expiredCompleted = completedWorkOrders.filter(wo => !wo.is_editable).length;
 
     const handleCreateWorkOrder = () => {
         setSelectedWorkOrder(null);
@@ -130,6 +152,38 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    const formatDateTime = (dateString: string) => {
+        return new Date(dateString).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getEditWindowInfo = (workOrder: WorkOrder) => {
+        if (!workOrder.completed_at) {
+            return { canEdit: true, message: 'Work order is not completed - edits allowed' };
+        }
+
+        if (workOrder.is_editable) {
+            const completedDate = new Date(workOrder.completed_at);
+            const sevenDaysFromCompletion = new Date(completedDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+            const daysRemaining = Math.ceil((sevenDaysFromCompletion.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            
+            return { 
+                canEdit: true, 
+                message: `Editable for ${daysRemaining} more day${daysRemaining !== 1 ? 's' : ''} (until ${formatDate(sevenDaysFromCompletion.toISOString())})` 
+            };
+        } else {
+            return { 
+                canEdit: false, 
+                message: 'Edit window expired (7 days after completion)' 
+            };
+        }
     };
 
     if (isLoading) {
@@ -201,6 +255,30 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
                         </div>
                     )}
 
+                    {/* Edit Window Summary */}
+                    {completedWorkOrders.length > 0 && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <div className="flex items-start">
+                                <svg className="w-5 h-5 text-blue-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                <div>
+                                    <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                        Edit Window Policy
+                                    </h4>
+                                    <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                                        <p>Completed work orders can be edited for 7 days after completion.</p>
+                                        <div className="mt-2 flex flex-wrap gap-4 text-xs">
+                                            <span>✅ Currently editable: <strong>{editableCompleted}</strong></span>
+                                            <span>🔒 Edit window expired: <strong>{expiredCompleted}</strong></span>
+                                            <span>📋 Total completed: <strong>{completedWorkOrders.length}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Filters */}
                     <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2">
@@ -216,6 +294,20 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
                         {Object.entries(statusLabels).map(([value, label]) => (
                             <option key={value} value={value}>{label}</option>
                         ))}
+                    </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Edit Window:
+                    </label>
+                    <select
+                        value={editWindowFilter}
+                        onChange={(e) => setEditWindowFilter(e.target.value as 'all' | 'editable' | 'expired')}
+                        className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm"
+                    >
+                        <option value="all">All Work Orders</option>
+                        <option value="editable">Currently Editable</option>
+                        <option value="expired">Edit Window Expired</option>
                     </select>
                 </div>
                 <div className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -264,6 +356,15 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
                                         {!workOrder.is_editable && (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
                                                 Read Only
+                                            </span>
+                                        )}
+                                        {workOrder.status === WorkOrderStatus.WORK_COMPLETED && (
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                workOrder.is_editable 
+                                                    ? 'bg-yellow-100 text-yellow-800' 
+                                                    : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {workOrder.is_editable ? '⏰ Edit window active' : '🔒 Edit window expired'}
                                             </span>
                                         )}
                                     </div>
@@ -444,7 +545,7 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
                                                 {selectedWorkOrder.completed_at && (
                                                     <div className="flex justify-between">
                                                         <span className="text-neutral-500 dark:text-neutral-400">Completed:</span>
-                                                        <span className="font-medium">{formatDate(selectedWorkOrder.completed_at)}</span>
+                                                        <span className="font-medium">{formatDateTime(selectedWorkOrder.completed_at)}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -470,6 +571,51 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Edit Window Status */}
+                                    {selectedWorkOrder.status === WorkOrderStatus.WORK_COMPLETED && (
+                                        <div className={`p-4 rounded-lg border ${
+                                            selectedWorkOrder.is_editable
+                                                ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                                                : 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700'
+                                        }`}>
+                                            <div className="flex items-start">
+                                                <div className="flex-shrink-0">
+                                                    {selectedWorkOrder.is_editable ? (
+                                                        <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                <div className="ml-3">
+                                                    <h4 className={`text-sm font-medium ${
+                                                        selectedWorkOrder.is_editable
+                                                            ? 'text-yellow-800 dark:text-yellow-200'
+                                                            : 'text-gray-800 dark:text-gray-200'
+                                                    }`}>
+                                                        Edit Window Status
+                                                    </h4>
+                                                    <p className={`text-sm mt-1 ${
+                                                        selectedWorkOrder.is_editable
+                                                            ? 'text-yellow-700 dark:text-yellow-300'
+                                                            : 'text-gray-600 dark:text-gray-400'
+                                                    }`}>
+                                                        {getEditWindowInfo(selectedWorkOrder).message}
+                                                    </p>
+                                                    {selectedWorkOrder.is_editable && (
+                                                        <p className="text-xs mt-2 text-yellow-600 dark:text-yellow-400">
+                                                            Work orders can be edited for up to 7 days after completion. 
+                                                            This includes adding/removing photos, updating parts and labor, and modifying notes.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Description */}
                                     {selectedWorkOrder.description && (
