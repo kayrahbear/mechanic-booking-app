@@ -761,23 +761,9 @@ export default function CustomerManager({
                                         </button>
                                         <button
                                             onClick={() => handleEdit(customer)}
-                                            className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+                                            className="text-sm bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 text-neutral-700 dark:text-neutral-300 px-3 py-1 rounded transition-colors"
                                         >
                                             Edit
-                                        </button>
-                                        {(!customer.invitation_status || customer.invitation_status === 'expired') && (
-                                            <button
-                                                onClick={() => setShowInvitationDialog(customer.id)}
-                                                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                                            >
-                                                Send Invite
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDelete(customer.id)}
-                                            className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                                        >
-                                            Delete
                                         </button>
                                     </div>
                                 </div>
@@ -799,6 +785,22 @@ export default function CustomerManager({
                                                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
                                                     Created by mechanic: {customer.created_by_mechanic ? 'Yes' : 'No'}
                                                 </p>
+                                                <div className="mt-3 flex gap-2">
+                                                    {customer.created_by_mechanic && (!customer.invitation_status || customer.invitation_status === 'expired') && (
+                                                        <button
+                                                            onClick={() => setShowInvitationDialog(customer.id)}
+                                                            className="text-sm bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 px-3 py-1 rounded transition-colors"
+                                                        >
+                                                            Send Invite
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleDelete(customer.id)}
+                                                        className="text-sm bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-300 px-3 py-1 rounded transition-colors"
+                                                    >
+                                                        Delete Customer
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
