@@ -34,10 +34,20 @@ def generate_temporary_password(length: int = 12) -> str:
 
 def require_mechanic_role(current_user = Depends(get_current_user)):
     """Dependency to ensure user has mechanic role."""
-    if not current_user or current_user.role != UserRole.MECHANIC.value:
+    logger.info(f"Customer endpoint access attempt - User: {current_user.email if current_user else 'None'}, Role: {current_user.role if current_user else 'None'}, is_mechanic: {current_user.is_mechanic if current_user else 'None'}, is_admin: {current_user.is_admin if current_user else 'None'}")
+    
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+    
+    # Check if user has mechanic role (from custom claims) or admin role
+    if not (current_user.is_mechanic or current_user.is_admin or current_user.role in ["mechanic", "admin"]):
+        logger.warning(f"Access denied for user {current_user.email} - insufficient permissions")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only mechanics can manage customers"
+            detail=f"Access denied. User role: {current_user.role}, is_mechanic: {current_user.is_mechanic}, is_admin: {current_user.is_admin}"
         )
     return current_user
 
