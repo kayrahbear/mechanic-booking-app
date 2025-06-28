@@ -20,10 +20,10 @@ from ..models import (
     VehicleCreate
 )
 from ..firestore import get_client
-from ..auth import get_current_user
+from ..auth import get_current_user, get_mechanic_user
 from ..tasks import send_customer_invitation_email
 
-router = APIRouter(prefix="/customers", tags=["customers"])
+router = APIRouter(prefix="/customers", tags=["customers"], dependencies=[Depends(get_mechanic_user)])
 logger = logging.getLogger(__name__)
 
 def generate_temporary_password(length: int = 12) -> str:
@@ -32,29 +32,13 @@ def generate_temporary_password(length: int = 12) -> str:
     password = ''.join(secrets.choice(alphabet) for _ in range(length))
     return password
 
-def require_mechanic_role(current_user = Depends(get_current_user)):
-    """Dependency to ensure user has mechanic role."""
-    logger.info(f"Customer endpoint access attempt - User: {current_user.email if current_user else 'None'}, Role: {current_user.role if current_user else 'None'}, is_mechanic: {current_user.is_mechanic if current_user else 'None'}, is_admin: {current_user.is_admin if current_user else 'None'}")
-    
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
-        )
-    
-    # Check if user has mechanic role (from custom claims) or admin role
-    if not (current_user.is_mechanic or current_user.is_admin or current_user.role in ["mechanic", "admin"]):
-        logger.warning(f"Access denied for user {current_user.email} - insufficient permissions")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access denied. User role: {current_user.role}, is_mechanic: {current_user.is_mechanic}, is_admin: {current_user.is_admin}"
-        )
-    return current_user
+# Router-level dependency handles admin authentication
 
 @router.post("/", response_model=CustomerResponse)
+@router.post("", response_model=CustomerResponse)  # Handle both /customers and /customers/
 async def create_customer(
     customer_data: CustomerCreateRequest,
-    current_user = Depends(require_mechanic_role)
+    current_user = Depends(get_current_user)
 ):
     """Create a new customer profile with optional vehicle information."""
     db = get_client()
@@ -183,9 +167,8 @@ async def create_customer(
         )
 
 @router.get("/", response_model=List[CustomerResponse])
-async def list_customers(
-    current_user = Depends(require_mechanic_role)
-):
+@router.get("", response_model=List[CustomerResponse])  # Handle both /customers and /customers/
+async def list_customers():
     """List all customers created by mechanics."""
     db = get_client()
     if not db:
@@ -237,7 +220,7 @@ async def list_customers(
 @router.get("/{customer_id}", response_model=CustomerResponse)
 async def get_customer_by_id(
     customer_id: str,
-    current_user = Depends(require_mechanic_role)
+    current_user = Depends(get_current_user)
 ):
     """Get a specific customer by ID."""
     db = get_client()
@@ -292,7 +275,7 @@ async def get_customer_by_id(
 async def update_customer(
     customer_id: str,
     customer_data: CustomerUpdateRequest,
-    current_user = Depends(require_mechanic_role)
+    current_user = Depends(get_current_user)
 ):
     """Update a customer's information."""
     db = get_client()
@@ -344,7 +327,7 @@ async def update_customer(
 @router.delete("/{customer_id}")
 async def delete_customer(
     customer_id: str,
-    current_user = Depends(require_mechanic_role)
+    current_user = Depends(get_current_user)
 ):
     """Delete a customer and their related data."""
     db = get_client()
@@ -403,7 +386,7 @@ async def delete_customer(
 @router.post("/{customer_id}/invite")
 async def send_invitation(
     customer_id: str,
-    current_user = Depends(require_mechanic_role)
+    current_user = Depends(get_current_user)
 ):
     """Send or resend an invitation to a customer."""
     db = get_client()
@@ -476,7 +459,7 @@ async def send_invitation(
 async def add_customer_vehicle(
     customer_id: str,
     vehicle_data: VehicleCreate,
-    current_user = Depends(require_mechanic_role)
+    current_user = Depends(get_current_user)
 ):
     """Add a vehicle to a customer's profile."""
     db = get_client()

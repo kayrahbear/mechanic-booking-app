@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { forwardRequest } from '../../lib/api-route-utils';
+import httpClient, { HttpClientError } from '../../lib/httpClient';
+
+const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
 export default async function handler(
     req: NextApiRequest,
@@ -7,23 +9,34 @@ export default async function handler(
 ) {
     // Allow GET (list customers) and POST (create customer)
     if (req.method !== 'GET' && req.method !== 'POST') {
-        return res.status(405).json({ detail: 'Method not allowed' });
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    console.log(`[API Route /api/customers] Handler invoked with method: ${req.method}`);
+    const token = req.headers.authorization;
 
-    // The endpoint is /customers
-    const endpoint = '/customers';
-    
-    // Configure options for the request
-    const options = {
-        timeout: 10000, // Longer timeout for customer operations
-        // Customer management requires authentication
-        requireAuth: true,
-        // Always use user authentication for customer management
-        preferUserAuth: true
-    };
-    
-    // Forward the request to the backend using our standardized utility
-    return forwardRequest(req, res, endpoint, options);
+    if (!token) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        httpClient.setAuthToken(token as string);
+        
+        if (req.method === 'GET') {
+            const data = await httpClient.get(`${apiUrl}/customers`);
+            return res.status(200).json(data);
+        } else if (req.method === 'POST') {
+            const data = await httpClient.post(`${apiUrl}/customers`, req.body);
+            return res.status(201).json(data);
+        }
+        
+    } catch (error: unknown) {
+        console.error('Error with customers endpoint:', error);
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Failed to process customers request'
+            });
+        }
+        return res.status(500).json({ error: 'An error occurred' });
+    }
 }

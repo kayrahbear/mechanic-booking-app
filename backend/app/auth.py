@@ -94,7 +94,7 @@ async def get_admin_user(current_user: User = Depends(get_current_user)) -> User
             detail="Not authorized - admin role required",
         )
     
-    return current_user 
+    return current_user
 
 async def get_mechanic_user(current_user: User = Depends(get_current_user)) -> User:
     """
