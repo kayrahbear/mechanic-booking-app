@@ -89,6 +89,9 @@ async def process_notification(request: Request):
                 email_sent = send_cancellation_email(template_data)
             elif notification_type == "reschedule_request":
                 email_sent = send_reschedule_request_email(template_data)
+            elif notification_type == "customer_invitation":
+                # Handle customer invitation emails
+                email_sent = send_customer_invitation_email(notification.data)
             else:
                 logger.warning(f"Unknown notification type: {notification_type}")
                 return {"status": "error", "message": f"Unknown notification type: {notification_type}"}

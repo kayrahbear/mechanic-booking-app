@@ -10,7 +10,7 @@ service cloud.firestore {
       return isAuthenticated() && 
              request.auth.token.email in [
                'admin@auto-mech-booking.com',
-               // Add admin emails here
+               'brewer.kaylam@gmail.com',
              ];
     }
     

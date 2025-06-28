@@ -324,3 +324,37 @@ def send_reschedule_request_email(booking_data: Dict[str, Any]) -> bool:
     except Exception as e:
         logger.error(f"Failed to send reschedule request email: {str(e)}")
         return False
+
+def send_customer_invitation_email(invitation_data: Dict[str, Any]) -> bool:
+    """
+    Send a customer invitation email with account credentials.
+    
+    Args:
+        invitation_data: Invitation information including customer_email, customer_name, temporary_password
+        
+    Returns:
+        True if email was sent successfully
+    """
+    try:
+        config = get_email_config()
+        
+        # Prepare template data
+        template_data = {
+            'customer_name': invitation_data['customer_name'],
+            'customer_email': invitation_data['customer_email'],
+            'temporary_password': invitation_data['temporary_password'],
+            'login_url': config.get('login_url', 'https://yourdomain.com/login')
+        }
+        
+        subject = "Welcome! Your account has been created"
+        html_content = render_email_template('customer_invitation.html', template_data)
+        
+        return send_email(
+            to_email=invitation_data['customer_email'],
+            subject=subject,
+            html_content=html_content
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to send customer invitation email: {str(e)}")
+        return False

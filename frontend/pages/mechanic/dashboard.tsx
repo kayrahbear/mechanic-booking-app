@@ -7,6 +7,7 @@ import MechanicAvailabilityManager from '../../components/MechanicAvailabilityMa
 import PendingAppointmentsList from '../../components/PendingAppointmentsList';
 import UpcomingAppointmentsList from '../../components/UpcomingAppointmentsList';
 import ServiceManager from '../../components/ServiceManager';
+import CustomerManager from '../../components/CustomerManager';
 import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
 import { User } from 'firebase/auth';
 
@@ -45,7 +46,7 @@ export default function MechanicDashboard() {
     const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
     const [isProcessingBooking, setIsProcessingBooking] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability' | 'services'>('pending');
+    const [activeTab, setActiveTab] = useState<'pending' | 'upcoming' | 'availability' | 'services' | 'customers'>('pending');
     const [mechanicSchedule, setMechanicSchedule] = useState<MechanicSchedule | null>(null);
 
     useEffect(() => {
@@ -183,6 +184,12 @@ export default function MechanicDashboard() {
                             >
                                 Manage Services
                             </button>
+                            <button
+                                className={`py-2 px-4 font-medium ${activeTab === 'customers' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                onClick={() => setActiveTab('customers')}
+                            >
+                                Customer Management
+                            </button>
                         </div>
 
                         {activeTab === 'pending' && (
@@ -210,6 +217,10 @@ export default function MechanicDashboard() {
 
                         {activeTab === 'services' && user && (
                             <ServiceManagerWrapper user={user} />
+                        )}
+
+                        {activeTab === 'customers' && (
+                            <CustomerManager />
                         )}
                     </>
                 )}

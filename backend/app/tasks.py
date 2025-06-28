@@ -114,4 +114,33 @@ def enqueue_notification_task(
         return response.name
     except Exception as e:
         logger.error(f"Failed to create task: {str(e)}")
-        return "" 
+        return ""
+
+async def send_customer_invitation_email(
+    customer_email: str,
+    customer_name: str,
+    temporary_password: str
+) -> str:
+    """
+    Send a customer invitation email via the notification worker.
+    
+    Args:
+        customer_email: Customer's email address
+        customer_name: Customer's name
+        temporary_password: Temporary password for the account
+        
+    Returns:
+        The name of the created task
+    """
+    payload = {
+        "notification_type": "customer_invitation",
+        "customer_email": customer_email,
+        "customer_name": customer_name,
+        "temporary_password": temporary_password
+    }
+    
+    return enqueue_notification_task(
+        booking_id=f"invitation_{customer_email}",
+        payload=payload,
+        delay_seconds=0
+    )

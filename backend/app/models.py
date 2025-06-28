@@ -167,8 +167,65 @@ class User(BaseModel):
     phone: Optional[str] = None
     role: str = UserRole.CUSTOMER.value
     mechanic_id: Optional[str] = None
+    created_by_mechanic: bool = False  # Flag to indicate if customer was created by mechanic
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+
+# Customer management models
+class CustomerCreateRequest(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    # Vehicle information (optional)
+    vehicle_make: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    vehicle_year: Optional[int] = Field(None, ge=1980, le=2030)
+    vehicle_vin: Optional[str] = Field(None, min_length=17, max_length=17)
+    send_invitation: bool = False  # Whether to send account invitation
+
+class CustomerUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+
+class CustomerInvitationStatus(str, Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+
+class CustomerInvitation(BaseModel):
+    id: str
+    customer_id: str
+    customer_email: EmailStr
+    temporary_password: str
+    status: str = CustomerInvitationStatus.PENDING.value
+    expires_at: datetime
+    sent_at: datetime = Field(default_factory=datetime.now)
+    accepted_at: Optional[datetime] = None
+    created_by: str  # Mechanic user ID who created the invitation
+
+class CustomerResponse(BaseModel):
+    id: str
+    email: EmailStr
+    name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    role: str = UserRole.CUSTOMER.value
+    created_by_mechanic: bool = False
+    vehicles: List[Vehicle] = []
+    invitation_status: Optional[str] = None  # If customer was invited
+    created_at: datetime
+    updated_at: datetime
 
 # NHTSA API models
 class NHTSAMake(BaseModel):

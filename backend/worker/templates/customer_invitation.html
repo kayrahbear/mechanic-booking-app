@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Invitation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background-color: #3f51b5; color: white; padding: 30px 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Welcome to Our Service!</h1>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 30px 20px;">
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hi {{ customer_name }},</p>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 20px;">
+                Your mechanic has created an account for you to manage your vehicle maintenance and appointments. 
+                You can now log in to view your service history, schedule appointments, and track your vehicle information.
+            </p>
+            
+            <!-- Account Details -->
+            <div style="background-color: #f8f9fa; border-left: 4px solid #3f51b5; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #3f51b5; font-size: 18px;">Your Account Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Email:</td>
+                        <td style="padding: 8px 0; color: #333;">{{ customer_email }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; color: #555;">Temporary Password:</td>
+                        <td style="padding: 8px 0; color: #333; font-family: monospace; background-color: #e3f2fd; padding: 4px 8px; border-radius: 4px;">{{ temporary_password }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Instructions -->
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #856404; font-size: 18px;">Important: Change Your Password</h3>
+                <p style="margin: 0; color: #856404; line-height: 1.6;">
+                    For security reasons, please log in and change your password as soon as possible. 
+                    This temporary password will expire in 7 days.
+                </p>
+            </div>
+            
+            <!-- Benefits -->
+            <div style="background-color: #e8f5e8; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #2e7d32; font-size: 18px;">What You Can Do</h3>
+                <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.8;">
+                    <li>View your vehicle information and service history</li>
+                    <li>Schedule new appointments online</li>
+                    <li>Receive appointment confirmations and reminders</li>
+                    <li>Track the status of your service requests</li>
+                    <li>Manage multiple vehicles if needed</li>
+                </ul>
+            </div>
+            
+            <!-- Login Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ login_url | default('https://yourdomain.com/login') }}" 
+                   style="display: inline-block; background-color: #3f51b5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+                    Log In to Your Account
+                </a>
+            </div>
+            
+            <p style="font-size: 16px; color: #333; line-height: 1.6; margin-top: 30px;">
+                If you have any questions about your account or need assistance, please don't hesitate to contact your mechanic or our support team.
+            </p>
+            
+            <p style="font-size: 16px; color: #333; margin-bottom: 0;">
+                Thank you for choosing our service!<br>
+                <strong>Your Mobile Mechanic Team</strong>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #6c757d;">
+                This invitation will expire in 7 days.
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #6c757d;">
+                If you did not expect this invitation, please contact us immediately.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
