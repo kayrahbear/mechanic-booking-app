@@ -185,15 +185,15 @@ async def list_customers():
             customer_data = doc.to_dict()
             customer_data["id"] = doc.id
             
-            # Get vehicles for this customer
-            vehicles_query = db.collection("vehicles").where("user_id", "==", doc.id)
-            vehicles_docs = vehicles_query.get()
+            # Get vehicles for this customer (stored as subcollection)
+            user_vehicles_ref = db.collection("users").document(doc.id).collection("vehicles")
+            vehicles_docs = user_vehicles_ref.order_by("created_at").get()
             vehicles = []
-            logger.info(f"Looking for vehicles for customer {doc.id}, found {len(vehicles_docs)} vehicles")
             for vehicle_doc in vehicles_docs:
                 vehicle_data = vehicle_doc.to_dict()
                 vehicle_data["id"] = vehicle_doc.id
-                logger.info(f"Vehicle data: {vehicle_data}")
+                # Add user_id field for compatibility with Vehicle model
+                vehicle_data["user_id"] = doc.id
                 vehicles.append(Vehicle(**vehicle_data))
             
             # Get invitation status if applicable
