@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { uploadWorkOrderPhoto, deleteWorkOrderPhoto } from '../lib/api';
 
 interface PhotoUploadProps {
@@ -18,7 +19,6 @@ export default function PhotoUpload({
 }: PhotoUploadProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
-    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,12 +145,13 @@ export default function PhotoUpload({
                     {photos.map((photoUrl, index) => (
                         <div key={index} className="relative group">
                             <div className="aspect-square bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden">
-                                <img
+                                <Image
                                     src={photoUrl}
                                     alt={`Work order photo ${index + 1}`}
-                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                    fill
+                                    className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
                                     onClick={() => openLightbox(photoUrl)}
-                                    loading="lazy"
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                 />
                                 
                                 {/* Delete button - only show if not disabled */}

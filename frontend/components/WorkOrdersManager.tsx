@@ -2,26 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../lib/auth-context';
 import { 
     WorkOrder, 
-    WorkOrderStatus, 
-    PartStatus, 
-    WorkOrderCreate, 
-    WorkOrderPart, 
-    WorkOrderLabor,
-    FirestoreUser 
+    WorkOrderStatus 
 } from '../lib/types';
 import { 
     getWorkOrders, 
-    createWorkOrder, 
-    updateWorkOrder, 
-    deleteWorkOrder 
+    updateWorkOrder 
 } from '../lib/api';
 import PartsInventoryManager from './PartsInventoryManager';
 import PhotoUpload from './PhotoUpload';
-
-interface WorkOrdersManagerProps {
-    onWorkOrderAdded?: () => void;
-    onWorkOrderUpdated?: () => void;
-}
 
 const statusColors = {
     [WorkOrderStatus.DRAFT]: 'bg-gray-100 text-gray-800',
@@ -37,17 +25,15 @@ const statusLabels = {
     [WorkOrderStatus.WORK_COMPLETED]: 'Completed',
 };
 
-export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated }: WorkOrdersManagerProps) {
+export default function WorkOrdersManager() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'workorders' | 'inventory'>('workorders');
     const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-    const [customers, setCustomers] = useState<FirestoreUser[]>([]);
     const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<WorkOrderStatus | 'all'>('all');
     const [editWindowFilter, setEditWindowFilter] = useState<'all' | 'editable' | 'expired'>('all');
@@ -69,23 +55,9 @@ export default function WorkOrdersManager({ onWorkOrderAdded, onWorkOrderUpdated
         }
     }, [user]);
 
-    // Load customers for the work order form
-    const loadCustomers = useCallback(async () => {
-        if (!user) return;
-        
-        try {
-            // We'll need to create a customers API endpoint similar to other components
-            // For now, we'll use a placeholder
-            setCustomers([]);
-        } catch (err) {
-            console.error('Error loading customers:', err);
-        }
-    }, [user]);
-
     useEffect(() => {
         loadWorkOrders();
-        loadCustomers();
-    }, [loadWorkOrders, loadCustomers]);
+    }, [loadWorkOrders]);
 
     const filteredWorkOrders = workOrders.filter(wo => {
         const matchesStatus = statusFilter === 'all' || wo.status === statusFilter;
