@@ -72,11 +72,6 @@ export default function Nav() {
                                     My Appointments
                                 </Link>
                             )}
-                            {(userRole === 'mechanic' || userRole === 'admin') && (
-                                <Link href="/mechanic/dashboard" className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${startsWith('/mechanic') ? 'border-primary dark:border-accent text-neutral-900 dark:text-white' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-200'}`}>
-                                    Dashboard
-                                </Link>
-                            )}
                             {userRole === 'admin' && (
                                 <Link href="/admin/users" className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${startsWith('/admin') ? 'border-primary dark:border-accent text-neutral-900 dark:text-white' : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 hover:text-neutral-700 dark:hover:text-neutral-200'}`}>
                                     Admin
@@ -125,7 +120,19 @@ export default function Nav() {
                     </div>
 
                     <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
-                        {/* Schedule Appointment Button - Always visible */}
+                        {userRole === 'mechanic' && (
+                        <Link
+                            href="/mechanic/dashboard"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm transition-colors"
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Management Dashboard
+                        </Link>
+                        )}
+                        {/* Schedule Appointment Button - Always visible for customers */}
+                        {userRole === 'customer' && (
                         <Link
                             href="/book"
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm transition-colors"
@@ -135,7 +142,7 @@ export default function Nav() {
                             </svg>
                             Schedule Appointment
                         </Link>
-                        
+                        )}
                         <ThemeToggle />
                         
                         {!loading && (

@@ -135,14 +135,7 @@ export default function Sidebar() {
                         ))}
                     </ul>
                 </nav>
-
-                {/* Footer */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-neutral-200 dark:border-neutral-700">
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                        <p>Auto Mechanic Scheduling</p>
-                        <p>v1.0.0</p>
-                    </div>
-                </div>
+                
             </div>
         </>
     );
