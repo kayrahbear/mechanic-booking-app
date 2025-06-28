@@ -84,27 +84,6 @@ export default function CustomerManager({
         send_invitation: false
     });
 
-    // Load customers
-    useEffect(() => {
-        if (user) {
-            loadCustomers();
-        }
-    }, [user, loadCustomers]);
-
-    // Load makes when component mounts
-    useEffect(() => {
-        loadMakes();
-    }, []);
-
-    // Load models when make changes
-    useEffect(() => {
-        if (formData.vehicle_make) {
-            loadModels(formData.vehicle_make);
-        } else {
-            setModels([]);
-        }
-    }, [formData.vehicle_make]);
-
     const loadCustomers = useCallback(async () => {
         try {
             setLoading(true);
@@ -129,6 +108,27 @@ export default function CustomerManager({
             setLoading(false);
         }
     }, [user]);
+
+    // Load customers
+    useEffect(() => {
+        if (user) {
+            loadCustomers();
+        }
+    }, [user, loadCustomers]);
+
+    // Load makes when component mounts
+    useEffect(() => {
+        loadMakes();
+    }, []);
+
+    // Load models when make changes
+    useEffect(() => {
+        if (formData.vehicle_make) {
+            loadModels(formData.vehicle_make);
+        } else {
+            setModels([]);
+        }
+    }, [formData.vehicle_make]);
 
     const loadMakes = async () => {
         try {

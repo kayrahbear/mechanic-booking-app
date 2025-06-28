@@ -31,27 +31,6 @@ export default function VehicleManager({
         vin: ''
     });
 
-    // Load user's vehicles
-    useEffect(() => {
-        if (user) {
-            loadVehicles();
-        }
-    }, [user, loadVehicles]);
-
-    // Load makes when component mounts
-    useEffect(() => {
-        loadMakes();
-    }, []);
-
-    // Load models when make changes
-    useEffect(() => {
-        if (formData.make) {
-            loadModels(formData.make);
-        } else {
-            setModels([]);
-        }
-    }, [formData.make]);
-
     const loadVehicles = useCallback(async () => {
         try {
             setLoading(true);
@@ -76,6 +55,27 @@ export default function VehicleManager({
             setLoading(false);
         }
     }, [user]);
+
+    // Load user's vehicles
+    useEffect(() => {
+        if (user) {
+            loadVehicles();
+        }
+    }, [user, loadVehicles]);
+
+    // Load makes when component mounts
+    useEffect(() => {
+        loadMakes();
+    }, []);
+
+    // Load models when make changes
+    useEffect(() => {
+        if (formData.make) {
+            loadModels(formData.make);
+        } else {
+            setModels([]);
+        }
+    }, [formData.make]);
 
     const loadMakes = async () => {
         try {
