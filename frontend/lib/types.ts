@@ -118,3 +118,19 @@ export interface NHTSAModel {
     Make_ID: number | string;
     Make_Name: string;
 }
+
+// Firestore User type
+export interface FirestoreUser {
+    uid: string;
+    email: string;
+    name: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+    role: 'admin' | 'mechanic' | 'customer';
+    created_by_mechanic?: boolean;
+    created_at: string;
+    updated_at: string;
+}

@@ -1,11 +1,13 @@
 import { useAuth } from '../lib/auth-context';
 import { useTheme } from '../lib/theme-context';
 import { useNavigation } from '../lib/navigation-context';
+import { useCurrentUser } from '../lib/use-current-user';
 
 export default function DashboardHeader() {
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
     const { isDarkMode, toggleDarkMode } = useTheme();
     const { toggleSidebar, activeSection } = useNavigation();
+    const { firestoreUser } = useCurrentUser();
 
     const getSectionTitle = (section: string) => {
         switch (section) {
@@ -68,17 +70,17 @@ export default function DashboardHeader() {
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                {user?.name || user?.email}
+                                {firestoreUser?.name || firestoreUser?.email || 'Loading...'}
                             </p>
-                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                Mechanic
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 capitalize">
+                                {firestoreUser?.role || 'Mechanic'}
                             </p>
                         </div>
 
                         {/* User avatar */}
                         <div className="w-8 h-8 bg-primary dark:bg-accent rounded-full flex items-center justify-center">
                             <span className="text-white text-sm font-medium">
-                                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                                {(firestoreUser?.name || firestoreUser?.email || 'U').charAt(0).toUpperCase()}
                             </span>
                         </div>
 
