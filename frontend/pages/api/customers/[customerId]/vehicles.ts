@@ -1,12 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { httpClient } from '../../../../lib/backend-client';
+import httpClient, { HttpClientError } from '../../../../lib/httpClient';
+
+const apiUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
     const { customerId } = req.query;
-    const token = req.headers.authorization?.replace('Bearer ', '');
+    const token = req.headers.authorization;
 
     if (!token) {
         return res.status(401).json({ error: 'Authorization required' });
@@ -17,13 +19,13 @@ export default async function handler(
     }
 
     try {
-        httpClient.setAuthToken(token);
+        httpClient.setAuthToken(token as string);
 
         switch (req.method) {
             case 'POST':
                 // Add vehicle to customer
                 const response = await httpClient.post(
-                    `/customers/${customerId}/vehicles`,
+                    `${apiUrl}/customers/${customerId}/vehicles`,
                     req.body
                 );
                 return res.status(201).json(response);
@@ -35,10 +37,10 @@ export default async function handler(
     } catch (error: unknown) {
         console.error('Customer vehicles API error:', error);
         
-        if (error && typeof error === 'object' && 'response' in error) {
-            const httpError = error as { response: { status: number; data?: { detail?: string } } };
-            return res.status(httpError.response.status).json({
-                error: httpError.response.data?.detail || 'Request failed'
+        if ((error as HttpClientError).status) {
+            const httpError = error as HttpClientError;
+            return res.status(httpError.status || 500).json({
+                error: httpError.data || 'Request failed'
             });
         }
         
