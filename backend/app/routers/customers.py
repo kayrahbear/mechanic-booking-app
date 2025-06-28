@@ -175,9 +175,10 @@ async def list_customers():
         raise HTTPException(500, "Database unavailable")
 
     try:
-        # Get all users with customer role and created_by_mechanic flag
+        # Get all users with customer role (temporarily showing all for debugging)
         customers_query = db.collection("users").where("role", "==", UserRole.CUSTOMER.value)
         customers_docs = customers_query.get()
+        logger.info(f"Found {len(customers_docs)} total customers")
 
         customers = []
         for doc in customers_docs:
@@ -188,9 +189,11 @@ async def list_customers():
             vehicles_query = db.collection("vehicles").where("user_id", "==", doc.id)
             vehicles_docs = vehicles_query.get()
             vehicles = []
+            logger.info(f"Looking for vehicles for customer {doc.id}, found {len(vehicles_docs)} vehicles")
             for vehicle_doc in vehicles_docs:
                 vehicle_data = vehicle_doc.to_dict()
                 vehicle_data["id"] = vehicle_doc.id
+                logger.info(f"Vehicle data: {vehicle_data}")
                 vehicles.append(Vehicle(**vehicle_data))
             
             # Get invitation status if applicable
