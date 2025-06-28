@@ -134,3 +134,144 @@ export interface FirestoreUser {
     created_at: string;
     updated_at: string;
 }
+
+// Work Order types
+export enum WorkOrderStatus {
+    DRAFT = 'draft',
+    IN_PROGRESS = 'in_progress',
+    WAITING_FOR_PARTS = 'waiting_for_parts',
+    WORK_COMPLETED = 'work_completed'
+}
+
+export enum PartStatus {
+    NEEDED = 'needed',
+    IN_STOCK = 'in_stock',
+    ORDERED = 'ordered',
+    RECEIVED = 'received',
+    USED = 'used'
+}
+
+export interface WorkOrderPart {
+    id: string;
+    work_order_id: string;
+    part_number?: string;
+    part_name: string;
+    description?: string;
+    quantity_needed: number;
+    quantity_used: number;
+    unit_cost: number;
+    total_cost: number;
+    in_stock_quantity?: number;
+    supplier?: string;
+    status: PartStatus;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WorkOrderLabor {
+    id: string;
+    work_order_id: string;
+    description: string;
+    hours: number; // In 0.5 hour increments
+    hourly_rate: number;
+    total_cost: number;
+    mechanic_id: string;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WorkOrder {
+    id: string;
+    work_order_number: string;
+    customer_id: string;
+    vehicle_id: string;
+    booking_id?: string;
+    mechanic_id: string;
+    mileage: number;
+    title: string;
+    description: string;
+    status: WorkOrderStatus;
+    service_type?: string;
+    scheduled_date?: string;
+    started_at?: string;
+    completed_at?: string;
+    parts: WorkOrderPart[];
+    labor_entries: WorkOrderLabor[];
+    parts_total: number;
+    labor_total: number;
+    total_cost: number;
+    mechanic_notes: string;
+    internal_notes?: string;
+    photos: string[];
+    is_editable: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WorkOrderCreate {
+    customer_id: string;
+    vehicle_id: string;
+    booking_id?: string;
+    mileage: number;
+    title: string;
+    description: string;
+    service_type?: string;
+    scheduled_date?: string;
+    parts: WorkOrderPartCreate[];
+    labor_entries: WorkOrderLaborCreate[];
+    mechanic_notes: string;
+    internal_notes?: string;
+}
+
+export interface WorkOrderPartCreate {
+    part_number?: string;
+    part_name: string;
+    description?: string;
+    quantity_needed: number;
+    quantity_used?: number;
+    unit_cost: number;
+    supplier?: string;
+    status?: PartStatus;
+    notes?: string;
+}
+
+export interface WorkOrderLaborCreate {
+    description: string;
+    hours: number;
+    hourly_rate: number;
+    mechanic_id: string;
+    notes?: string;
+}
+
+// Parts Inventory types
+export interface PartInventory {
+    id: string;
+    part_number: string;
+    part_name: string;
+    description?: string;
+    category?: string;
+    quantity_on_hand: number;
+    minimum_stock_level?: number;
+    reorder_quantity?: number;
+    unit_cost: number;
+    supplier?: string;
+    supplier_part_number?: string;
+    last_ordered?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PartInventoryCreate {
+    part_number: string;
+    part_name: string;
+    description?: string;
+    category?: string;
+    quantity_on_hand: number;
+    minimum_stock_level?: number;
+    reorder_quantity?: number;
+    unit_cost: number;
+    supplier?: string;
+    supplier_part_number?: string;
+}

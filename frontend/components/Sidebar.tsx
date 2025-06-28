@@ -42,7 +42,7 @@ const navigationItems: NavigationItem[] = [
         label: 'Work Orders',
         icon: '🔧',
         description: 'Service appointment details',
-        available: false
+        available: true
     },
     {
         id: 'settings',

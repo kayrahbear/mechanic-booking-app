@@ -256,3 +256,162 @@ class AvailabilitySeedResult(BaseModel):
     updated: int
     skipped: int
     dry_run: bool = False
+
+# Work Order models
+class WorkOrderStatus(str, Enum):
+    DRAFT = "draft"
+    IN_PROGRESS = "in_progress"
+    WAITING_FOR_PARTS = "waiting_for_parts"
+    WORK_COMPLETED = "work_completed"
+
+class PartStatus(str, Enum):
+    NEEDED = "needed"
+    IN_STOCK = "in_stock"
+    ORDERED = "ordered"
+    RECEIVED = "received"
+    USED = "used"
+
+class WorkOrderPart(BaseModel):
+    id: str
+    work_order_id: str
+    part_number: Optional[str] = None
+    part_name: str
+    description: Optional[str] = None
+    quantity_needed: int = Field(ge=1)
+    quantity_used: int = Field(ge=0, default=0)
+    unit_cost: float = Field(ge=0)
+    total_cost: float = Field(ge=0)
+    in_stock_quantity: Optional[int] = None
+    supplier: Optional[str] = None
+    status: str = PartStatus.NEEDED.value
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+class WorkOrderLabor(BaseModel):
+    id: str
+    work_order_id: str
+    description: str
+    hours: float = Field(ge=0)  # In 0.5 hour increments
+    hourly_rate: float = Field(ge=0)
+    total_cost: float = Field(ge=0)
+    mechanic_id: str
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+class WorkOrder(BaseModel):
+    id: str
+    work_order_number: str
+    customer_id: str
+    vehicle_id: str
+    booking_id: Optional[str] = None
+    mechanic_id: str
+    mileage: int = Field(ge=0)
+    title: str
+    description: str
+    status: str = WorkOrderStatus.DRAFT.value
+    service_type: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    parts: List[WorkOrderPart] = []
+    labor_entries: List[WorkOrderLabor] = []
+    parts_total: float = Field(ge=0, default=0)
+    labor_total: float = Field(ge=0, default=0)
+    total_cost: float = Field(ge=0, default=0)
+    mechanic_notes: str = ""
+    internal_notes: Optional[str] = None
+    photos: List[str] = []  # Photo URLs
+    is_editable: bool = True
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+# Work Order creation/update request models
+class WorkOrderPartCreate(BaseModel):
+    part_number: Optional[str] = None
+    part_name: str
+    description: Optional[str] = None
+    quantity_needed: int = Field(ge=1)
+    quantity_used: int = Field(ge=0, default=0)
+    unit_cost: float = Field(ge=0)
+    supplier: Optional[str] = None
+    status: str = PartStatus.NEEDED.value
+    notes: Optional[str] = None
+
+class WorkOrderLaborCreate(BaseModel):
+    description: str
+    hours: float = Field(ge=0)  # In 0.5 hour increments
+    hourly_rate: float = Field(ge=0)
+    mechanic_id: str
+    notes: Optional[str] = None
+
+class WorkOrderCreate(BaseModel):
+    customer_id: str
+    vehicle_id: str
+    booking_id: Optional[str] = None
+    mileage: int = Field(ge=0)
+    title: str
+    description: str
+    service_type: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+    parts: List[WorkOrderPartCreate] = []
+    labor_entries: List[WorkOrderLaborCreate] = []
+    mechanic_notes: str = ""
+    internal_notes: Optional[str] = None
+
+class WorkOrderUpdate(BaseModel):
+    mileage: Optional[int] = Field(None, ge=0)
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    service_type: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    parts: Optional[List[WorkOrderPartCreate]] = None
+    labor_entries: Optional[List[WorkOrderLaborCreate]] = None
+    mechanic_notes: Optional[str] = None
+    internal_notes: Optional[str] = None
+    photos: Optional[List[str]] = None
+
+# Parts Inventory models
+class PartInventory(BaseModel):
+    id: str
+    part_number: str
+    part_name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    quantity_on_hand: int = Field(ge=0)
+    minimum_stock_level: Optional[int] = Field(None, ge=0)
+    reorder_quantity: Optional[int] = Field(None, ge=1)
+    unit_cost: float = Field(ge=0)
+    supplier: Optional[str] = None
+    supplier_part_number: Optional[str] = None
+    last_ordered: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+class PartInventoryCreate(BaseModel):
+    part_number: str
+    part_name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    quantity_on_hand: int = Field(ge=0)
+    minimum_stock_level: Optional[int] = Field(None, ge=0)
+    reorder_quantity: Optional[int] = Field(None, ge=1)
+    unit_cost: float = Field(ge=0)
+    supplier: Optional[str] = None
+    supplier_part_number: Optional[str] = None
+
+class PartInventoryUpdate(BaseModel):
+    part_name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    quantity_on_hand: Optional[int] = Field(None, ge=0)
+    minimum_stock_level: Optional[int] = Field(None, ge=0)
+    reorder_quantity: Optional[int] = Field(None, ge=1)
+    unit_cost: Optional[float] = Field(None, ge=0)
+    supplier: Optional[str] = None
+    supplier_part_number: Optional[str] = None
+    last_ordered: Optional[datetime] = None

@@ -9,6 +9,7 @@ import PendingAppointmentsList from '../../components/PendingAppointmentsList';
 import UpcomingAppointmentsList from '../../components/UpcomingAppointmentsList';
 import ServiceManager from '../../components/ServiceManager';
 import CustomerManager from '../../components/CustomerManager';
+import WorkOrdersManager from '../../components/WorkOrdersManager';
 import Sidebar from '../../components/Sidebar';
 import DashboardHeader from '../../components/DashboardHeader';
 import { getPendingBookings, getUpcomingBookings, approveBooking, denyBooking, updateMechanicAvailability } from '../../lib/api';
@@ -212,6 +213,8 @@ function DashboardContent() {
                 return <CustomerManager />;
             case 'analytics':
                 return user && <ServiceManagerWrapper user={user} />;
+            case 'workorders':
+                return <WorkOrdersManager />;
             default:
                 return (
                     <div className="text-center py-12">

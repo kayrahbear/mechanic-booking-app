@@ -5,17 +5,24 @@ from typing import List, Optional
 import logging
 from pydantic import BaseModel
 
-from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole, BookingCancellationRequest, BookingRescheduleRequest
+from ..models import BookingCreate, BookingOut, BookingStatus, SlotStatus, UserRole, BookingCancellationRequest, BookingRescheduleRequest, WorkOrderStatus
 from ..firestore import get_client
 from ..auth import get_current_user, get_admin_user, get_mechanic_user
 from ..notifications import send_booking_notification
 from ..google_calendar import delete_event
 from ..services.booking_service import BookingError, SlotUnavailableError, ServiceNotFoundError
+from uuid import uuid4
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 # Setup logging
 logger = logging.getLogger(__name__)
+
+def generate_work_order_number() -> str:
+    """Generate a unique work order number in format WO-YYYY-NNNN"""
+    current_year = datetime.now().year
+    timestamp = datetime.now().strftime("%m%d%H%M")
+    return f"WO-{current_year}-{timestamp}"
 
 class BookingApproval(BaseModel):
     """Model for booking approval requests"""
@@ -286,8 +293,44 @@ async def approve_or_deny_booking(
         
         transaction.update(booking_ref, update_data)
         
+        # If we're approving the booking, create a work order
+        if approval.approved:
+            # Create work order automatically
+            work_order_ref = db.collection("work_orders").document()
+            work_order_id = work_order_ref.id
+            work_order_number = generate_work_order_number()
+            
+            work_order_data = {
+                "id": work_order_id,
+                "work_order_number": work_order_number,
+                "customer_id": booking_data.get("customer_id", ""),
+                "vehicle_id": booking_data.get("vehicle_id", ""),
+                "booking_id": booking_id,
+                "mechanic_id": current_user.uid,
+                "mileage": 0,  # Will be filled in by mechanic later
+                "title": f"{booking_data.get('service_name', 'Service')} - {booking_data.get('customer_name', 'Customer')}",
+                "description": f"Work order auto-created from approved booking.\nCustomer: {booking_data.get('customer_name', '')}\nService: {booking_data.get('service_name', '')}\nScheduled: {booking_data.get('slot_start', '')}",
+                "status": WorkOrderStatus.DRAFT.value,
+                "service_type": booking_data.get("service_name"),
+                "scheduled_date": booking_data.get("slot_start"),
+                "parts": [],
+                "labor_entries": [],
+                "parts_total": 0.0,
+                "labor_total": 0.0,
+                "total_cost": 0.0,
+                "mechanic_notes": "",
+                "internal_notes": f"Auto-created from booking approval. Original booking notes: {booking_data.get('notes', 'None')}",
+                "photos": [],
+                "is_editable": True,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "updated_at": firestore.SERVER_TIMESTAMP
+            }
+            
+            transaction.set(work_order_ref, work_order_data)
+            logger.info(f"Auto-created work order {work_order_number} for approved booking {booking_id}")
+        
         # If we're denying the booking, we need to mark the slot as free again
-        if not approval.approved:
+        elif not approval.approved:
             # Get the slot from availability
             slot_date = booking_data["slot_start"].date().isoformat()
             slot_time = booking_data["slot_start"].strftime("%H:%M")

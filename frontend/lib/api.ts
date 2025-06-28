@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { Booking, MechanicSchedule } from './types';
+import { Booking, MechanicSchedule, WorkOrder, WorkOrderCreate, PartInventory, PartInventoryCreate } from './types';
 
 // Define interfaces for API responses
 export interface Service {
@@ -125,6 +125,75 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
 export const updateUserProfile = async (data: { name: string; phone?: string }): Promise<UserProfile> => {
     return apiClient.put<UserProfile>('/user', data);
+};
+
+// Work Order endpoints
+export const getWorkOrders = async (): Promise<WorkOrder[]> => {
+    return apiClient.get<WorkOrder[]>('/workorders');
+};
+
+export const getWorkOrder = async (workOrderId: string): Promise<WorkOrder> => {
+    return apiClient.get<WorkOrder>(`/workorders/${workOrderId}`);
+};
+
+export const createWorkOrder = async (workOrderData: WorkOrderCreate): Promise<WorkOrder> => {
+    return apiClient.post<WorkOrder>('/workorders', workOrderData);
+};
+
+export const updateWorkOrder = async (workOrderId: string, workOrderData: Partial<WorkOrder>): Promise<WorkOrder> => {
+    return apiClient.put<WorkOrder>(`/workorders/${workOrderId}`, workOrderData);
+};
+
+export const deleteWorkOrder = async (workOrderId: string): Promise<{ message: string }> => {
+    return apiClient.delete<{ message: string }>(`/workorders/${workOrderId}`);
+};
+
+// Parts Inventory endpoints
+export const getPartsInventory = async (): Promise<PartInventory[]> => {
+    return apiClient.get<PartInventory[]>('/workorders/inventory/parts');
+};
+
+export const getPartInventory = async (partId: string): Promise<PartInventory> => {
+    return apiClient.get<PartInventory>(`/workorders/inventory/parts/${partId}`);
+};
+
+export const createPartInventory = async (partData: PartInventoryCreate): Promise<PartInventory> => {
+    return apiClient.post<PartInventory>('/workorders/inventory/parts', partData);
+};
+
+export const updatePartInventory = async (partId: string, partData: Partial<PartInventory>): Promise<PartInventory> => {
+    return apiClient.put<PartInventory>(`/workorders/inventory/parts/${partId}`, partData);
+};
+
+export const deletePartInventory = async (partId: string): Promise<{ message: string }> => {
+    return apiClient.delete<{ message: string }>(`/workorders/inventory/parts/${partId}`);
+};
+
+export const adjustPartQuantity = async (partId: string, quantityChange: number, reason: string): Promise<PartInventory> => {
+    return apiClient.post<PartInventory>(`/workorders/inventory/parts/${partId}/adjust`, {
+        quantity_change: quantityChange,
+        reason
+    });
+};
+
+export const getLowStockParts = async (): Promise<PartInventory[]> => {
+    return apiClient.get<PartInventory[]>('/workorders/inventory/parts/low-stock');
+};
+
+// Work Order Photo endpoints
+export const uploadWorkOrderPhoto = async (workOrderId: string, file: File): Promise<{ photo_url: string; message: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    return apiClient.post<{ photo_url: string; message: string }>(`/workorders/${workOrderId}/photos`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
+export const deleteWorkOrderPhoto = async (workOrderId: string, photoIndex: number): Promise<{ message: string }> => {
+    return apiClient.delete<{ message: string }>(`/workorders/${workOrderId}/photos/${photoIndex}`);
 };
 
 // Admin endpoints
